@@ -1521,6 +1521,29 @@
         retryQueue();
       }
 
+      const GOOGLE_USERCONTENT_ORIGIN =
+        /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/;
+
+      function isFromTransportFrame(event, frame) {
+        if (!frame || !frame.contentWindow || !event.source) return false;
+        if (!GOOGLE_USERCONTENT_ORIGIN.test(String(event.origin || ""))) {
+          return false;
+        }
+        let win = event.source;
+        for (let depth = 0; depth < 6; depth++) {
+          if (win === frame.contentWindow) return true;
+          let parent;
+          try {
+            parent = win.parent;
+          } catch (error) {
+            return false;
+          }
+          if (!parent || parent === win) return false;
+          win = parent;
+        }
+        return false;
+      }
+
       async function postToAppsScript(payload) {
         const user = auth.currentUser;
         if (!user) throw new Error("No hay una sesión Google iniciada.");
@@ -1565,8 +1588,14 @@
           }
 
           function onMessage(event) {
-            // El mensaje debe proceder del iframe concreto usado para el POST.
-            if (event.source !== frame.contentWindow) return;
+            // Apps Script sirve HtmlService dentro de iframes anidados:
+            //   frame (script.google.com) -> script.googleusercontent.com -> panel de usuario.
+            // Por eso event.source es un descendiente de frame.contentWindow,
+            // no frame.contentWindow en sí. Se valida:
+            //  1) origen de Google (subdominio de script.googleusercontent.com),
+            //  2) que la ventana emisora descienda del iframe concreto del POST
+            //     (window.parent es accesible entre orígenes).
+            if (!isFromTransportFrame(event, frame)) return;
 
             const message = event.data;
             if (
