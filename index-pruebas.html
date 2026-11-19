@@ -304,13 +304,12 @@
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js';
     import {
-      getAuth,
-      GoogleAuthProvider,
-      signInWithRedirect,
-      getRedirectResult,
-      onAuthStateChanged,
-      signOut
-    } from 'https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js';
+  		getAuth,
+ 		 GoogleAuthProvider,
+  		signInWithPopup,
+ 		 onAuthStateChanged,
+ 		 signOut
+} from 'https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js';
 
     'use strict';
 
@@ -1311,21 +1310,37 @@
     }
 
     async function startGoogleSignIn() {
-      const button = $('googleLoginButton');
-      try {
-        button.disabled = true;
-        $('authMessage').textContent = 'Conectando con Google...';
+  const button = $('googleLoginButton');
 
-        const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
+  try {
+    button.disabled = true;
+    $('authMessage').textContent = 'Conectando con Google...';
 
-        await signInWithRedirect(auth, provider);
-      } catch (error) {
-        console.error('Error de inicio de sesión:', error);
-        $('authMessage').textContent = 'No se pudo iniciar sesión: ' + (error.message || 'Error desconocido.');
-        button.disabled = false;
-      }
-    }
+    const provider = new GoogleAuthProvider();
+
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+
+    const result = await signInWithPopup(auth, provider);
+
+    console.log(
+      'Inicio de sesión correcto:',
+      result.user.email,
+      result.user.uid
+    );
+
+  } catch (error) {
+    console.error('Error de inicio de sesión:', error);
+
+    $('authMessage').textContent =
+      'No se pudo iniciar sesión: ' +
+      (error.code || '') + ' ' +
+      (error.message || 'Error desconocido.');
+
+    button.disabled = false;
+  }
+}
 
     async function closeGoogleSession() {
       try {
@@ -1546,10 +1561,6 @@
     onAuthStateChanged(auth, handleAuthState);
 
     // Recupera y limpia el resultado de la autenticación por redirección.
-    getRedirectResult(auth).catch(error => {
-      console.error('Error al regresar de Google:', error);
-      $('authMessage').textContent = 'No se pudo completar el acceso con Google: ' +
-        (error.message || 'Error desconocido.');
     });
   </script>
 </body>
