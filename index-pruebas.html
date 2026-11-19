@@ -1,1254 +1,2234 @@
 <!doctype html>
 <html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#10243a">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Toma de stock</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --navy: #10243a;
-      --navy-2: #193a59;
-      --blue: #27628b;
-      --green: #16804a;
-      --green-soft: #e7f6ed;
-      --amber: #a96b08;
-      --amber-soft: #fff5df;
-      --red: #b42318;
-      --red-soft: #fff0ef;
-      --ink: #172433;
-      --muted: #627184;
-      --line: #dce4ec;
-      --surface: #ffffff;
-      --bg: #f2f5f8;
-      --shadow: 0 8px 24px rgba(16, 36, 58, .08);
-      --radius: 17px;
-    }
-    * { box-sizing: border-box; }
-    [hidden] { display: none !important; }
-    html { min-height: 100%; background: var(--bg); }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      min-height: 100dvh;
-      padding: 0 0 calc(22px + env(safe-area-inset-bottom));
-      background: var(--bg);
-      color: var(--ink);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
-    button, input, select { font: inherit; }
-    button { touch-action: manipulation; }
-    .topbar {
-      padding: calc(13px + env(safe-area-inset-top)) 16px 17px;
-      background: linear-gradient(135deg, var(--navy), var(--navy-2));
-      color: #fff;
-      box-shadow: 0 4px 15px rgba(16,36,58,.18);
-    }
-    .topline { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    .brand { display:flex; align-items:center; gap:10px; min-width:0; }
-    .brand-icon {
-      display:grid; place-items:center; width:40px; height:40px; flex:0 0 40px;
-      border-radius:13px; background:rgba(255,255,255,.13); font-size:21px;
-    }
-    .brand h1 { margin:0; font-size:19px; line-height:1.15; letter-spacing:-.35px; }
-    .brand p { margin:3px 0 0; color:rgba(255,255,255,.7); font-size:12px; }
-    .connection {
-      display:inline-flex; align-items:center; gap:6px; flex:0 0 auto;
-      padding:7px 9px; border:1px solid rgba(255,255,255,.2); border-radius:999px;
-      color:#e9f1f8; font-size:11px; font-weight:700; white-space:nowrap;
-      background:rgba(255,255,255,.08);
-    }
-    .dot { width:7px; height:7px; border-radius:50%; background:#65d99a; box-shadow:0 0 0 3px rgba(101,217,154,.14); }
-    .connection.offline .dot { background:#ffbf47; box-shadow:0 0 0 3px rgba(255,191,71,.14); }
-    .wrap { width:min(100%, 720px); margin:0 auto; padding:15px 13px 0; }
-    .card {
-      background:var(--surface); border:1px solid rgba(220,228,236,.9); border-radius:var(--radius);
-      box-shadow:var(--shadow); padding:16px; margin-bottom:13px;
-    }
-    .auth-card { border-top:4px solid var(--blue); }
-    .auth-card .helper { line-height:1.5; }
-    .section-title { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 12px; }
-    .section-title h2 { margin:0; font-size:15px; letter-spacing:-.15px; }
-    .step { display:inline-grid; place-items:center; width:24px; height:24px; margin-right:7px; border-radius:8px; background:#eaf1f7; color:var(--navy-2); font-size:12px; font-weight:800; vertical-align:middle; }
-    label { display:block; margin:0 0 7px; color:#425266; font-size:12px; font-weight:750; }
-    .field { width:100%; min-height:50px; border:1.5px solid var(--line); border-radius:12px; padding:0 13px; background:#fff; color:var(--ink); outline:none; transition:border-color .15s, box-shadow .15s; }
-    .field:focus { border-color:#3c82b3; box-shadow:0 0 0 3px rgba(60,130,179,.13); }
-    select.field { appearance:none; padding-right:40px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23536579' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 13px center; font-weight:750; }
-    .location-card { padding:14px 16px; }
-    .location-card .section-title { margin-bottom:9px; }
-    .location-hint { margin:7px 0 0; color:var(--muted); font-size:11px; }
-    .scan-grid { display:grid; grid-template-columns:minmax(0,1fr) 94px; gap:10px; align-items:end; }
-    .code-wrap { position:relative; min-width:0; }
-    #codeInput { min-height:58px; font-size:19px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; }
-    #qtyInput { min-height:58px; text-align:center; font-size:20px; font-weight:800; padding:0 8px; }
-    .suggestions {
-      position:absolute; z-index:20; top:calc(100% + 5px); left:0; right:0; max-height:260px; overflow:auto;
-      border:1px solid var(--line); border-radius:13px; background:#fff; box-shadow:0 12px 28px rgba(16,36,58,.16);
-    }
-    .suggestion { display:block; width:100%; border:0; border-bottom:1px solid #edf1f5; padding:11px 12px; background:#fff; text-align:left; color:var(--ink); }
-    .suggestion:last-child { border-bottom:0; }
-    .suggestion:active { background:#eef5fa; }
-    .suggestion strong { display:block; font-size:13px; }
-    .suggestion small { display:block; margin-top:2px; color:var(--muted); font-size:11px; line-height:1.35; }
-    .helper { margin:8px 0 13px; color:var(--muted); font-size:11px; line-height:1.4; }
-    .btn {
-      display:inline-flex; justify-content:center; align-items:center; gap:8px; min-height:47px;
-      border:0; border-radius:12px; padding:0 14px; font-weight:800; cursor:pointer;
-      transition:transform .08s, filter .12s, opacity .12s;
-    }
-    .btn:active { transform:scale(.985); }
-    .btn:disabled { opacity:.45; cursor:not-allowed; }
-    .btn-primary { width:100%; min-height:54px; background:var(--green); color:#fff; font-size:16px; box-shadow:0 5px 13px rgba(22,128,74,.18); }
-    .btn-secondary { background:#edf3f8; color:var(--navy-2); }
-    .btn-outline { border:1px solid var(--line); background:#fff; color:var(--navy-2); }
-    .btn-danger { background:var(--red-soft); color:var(--red); }
-    .btn-small { min-height:36px; padding:0 10px; border-radius:10px; font-size:12px; }
-    .toolbar { display:flex; gap:8px; flex-wrap:wrap; }
-    .toolbar .btn { flex:1 1 auto; }
-    .message { display:none; margin:0 0 12px; padding:11px 12px; border-radius:11px; font-size:12px; line-height:1.4; }
-    .message.show { display:block; }
-    .message.info { background:#edf5fb; color:#245a7e; }
-    .message.success { background:var(--green-soft); color:#17613b; }
-    .message.error { background:var(--red-soft); color:var(--red); }
-    .message.warning { background:var(--amber-soft); color:#80520a; }
-    .list-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
-    .list-head h2 { margin:0; font-size:15px; }
-    .count-pill { display:inline-flex; align-items:center; padding:5px 9px; border-radius:999px; background:#edf3f8; color:var(--navy-2); font-size:11px; font-weight:800; white-space:nowrap; }
-    .stats { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:12px; }
-    .stat { padding:10px 12px; border-radius:12px; background:#f5f8fb; }
-    .stat span { display:block; color:var(--muted); font-size:10px; font-weight:750; text-transform:uppercase; letter-spacing:.45px; }
-    .stat strong { display:block; margin-top:2px; font-size:21px; letter-spacing:-.5px; }
-    .item-list { display:flex; flex-direction:column; gap:9px; }
-    .item { border:1px solid var(--line); border-radius:14px; padding:12px; background:#fff; }
-    .item-top { display:flex; justify-content:space-between; align-items:flex-start; gap:9px; }
-    .item-code { color:var(--navy); font-size:16px; font-weight:900; letter-spacing:.35px; }
-    .item-desc { margin-top:3px; color:#526174; font-size:12px; line-height:1.35; overflow-wrap:anywhere; }
-    .item-meta { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:9px; }
-    .tag { display:inline-flex; align-items:center; gap:4px; padding:5px 7px; border-radius:8px; background:#f0f4f7; color:#425266; font-size:10px; font-weight:750; }
-    .tag.pending { background:var(--amber-soft); color:#875708; }
-    .tag.sent { background:var(--green-soft); color:#17613b; }
-    .item-actions { display:flex; gap:7px; margin-top:11px; }
-    .item-actions .btn { flex:1; }
-    .empty { padding:25px 12px; text-align:center; color:var(--muted); }
-    .empty .empty-icon { font-size:30px; }
-    .empty strong { display:block; margin-top:7px; color:#425266; font-size:13px; }
-    .empty p { margin:4px 0 0; font-size:11px; }
-    .editor { display:none; margin-top:11px; padding:11px; border-radius:12px; background:#f5f8fb; }
-    .editor.open { display:block; }
-    .editor-grid { display:grid; grid-template-columns:minmax(0,1fr) 82px; gap:8px; }
-    .editor .field { min-height:43px; }
-    .editor-actions { display:flex; gap:7px; margin-top:9px; }
-    .editor-actions .btn { flex:1; }
-    .footer-note { padding:4px 8px 0; color:#738194; text-align:center; font-size:10px; line-height:1.5; }
-    .spinner { width:14px; height:14px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:spin .7s linear infinite; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    .group-card { border-top:4px solid #27628b; }
-    .group-active { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:#eaf2f8; color:#1d5277; font-size:11px; font-weight:850; }
-    .progress-card { border-left:4px solid var(--green); }
-    .progress-track { width:100%; height:10px; overflow:hidden; margin-top:10px; border-radius:999px; background:#e8edf2; }
-    .progress-fill { width:0; height:100%; border-radius:999px; background:linear-gradient(90deg,#16804a,#36ae70); transition:width .2s ease; }
-    .progress-note { margin:9px 0 0; color:var(--muted); font-size:11px; line-height:1.4; }
-    .stock-search { margin-bottom:10px; }
-    .filter-bar { display:flex; gap:6px; overflow-x:auto; padding:1px 0 10px; }
-    .filter-btn { flex:0 0 auto; min-height:35px; border:1px solid var(--line); border-radius:999px; padding:0 11px; background:#fff; color:#536579; font-size:11px; font-weight:800; }
-    .filter-btn.active { border-color:var(--navy-2); background:var(--navy-2); color:#fff; }
-    .stock-list { display:flex; flex-direction:column; gap:8px; }
-    .stock-item { padding:11px; border:1px solid var(--line); border-radius:13px; background:#fff; }
-    .stock-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
-    .stock-code { color:var(--navy); font-size:15px; font-weight:900; letter-spacing:.3px; }
-    .stock-desc { margin-top:3px; color:#526174; font-size:12px; line-height:1.35; overflow-wrap:anywhere; }
-    .stock-group { margin-top:6px; color:#718096; font-size:10px; }
-    .stock-values { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:9px; padding:8px; border-radius:9px; background:#f5f8fb; }
-    .stock-values span { display:block; color:var(--muted); font-size:10px; }
-    .stock-values strong { display:block; margin-top:2px; color:var(--ink); font-size:14px; }
-    .status-tag { display:inline-flex; align-items:center; padding:5px 8px; border-radius:999px; font-size:10px; font-weight:850; white-space:nowrap; }
-    .status-pending { background:var(--amber-soft); color:#875708; }
-    .status-partial { background:#fff0df; color:#96520d; }
-    .status-ok { background:var(--green-soft); color:#17613b; }
-    .status-surplus { background:var(--red-soft); color:var(--red); }
-    .stock-footnote { margin:8px 0 0; color:var(--muted); font-size:10px; line-height:1.4; }
-    .refresh-btn { min-height:36px; padding:0 10px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--navy-2); font-size:11px; font-weight:800; }
-    @media (max-width:380px) { .stats { gap:6px; } .stat { padding:9px; } .stat strong { font-size:18px; } }
-    @media (min-width:560px) {
-      .wrap { padding-left:18px; padding-right:18px; }
-      .topbar { padding-left:calc((100% - 684px)/2 + 18px); padding-right:calc((100% - 684px)/2 + 18px); }
-    }
-  </style>
-</head>
-<body>
-  <header class="topbar">
-    <div class="topline">
-      <div class="brand">
-        <div class="brand-icon" aria-hidden="true">📦</div>
-        <div>
-          <h1>Toma de stock</h1>
-          <p>Escaneo rápido · Conteo por ubicación</p>
-        </div>
-      </div>
-      <div class="connection" id="connectionBadge"><span class="dot"></span><span id="connectionText">Sin sesión</span></div>
-    </div>
-  </header>
-
-  <main class="wrap">
-    <section class="card auth-card" id="authCard">
-      <div id="authSignedOut">
-        <div class="section-title"><h2>Acceso a C-Stock</h2></div>
-        <p class="helper">Iniciá sesión con la cuenta Google autorizada por el administrador.</p>
-        <button class="btn btn-primary" id="googleLoginButton" type="button">Continuar con Google</button>
-      </div>
-
-      <div id="authSignedIn" hidden>
-        <div class="section-title"><h2>Sesión iniciada</h2></div>
-        <p id="authIdentity" class="helper"></p>
-        <button class="btn btn-outline" id="signOutButton" type="button">Cerrar sesión</button>
-      </div>
-
-      <p id="authMessage" class="helper" role="status" aria-live="polite">Comprobando sesión...</p>
-    </section>
-
-    <div id="appContent" hidden>
-      <section class="card location-card" aria-labelledby="locationTitle">
-        <div class="section-title"><h2 id="locationTitle"><span class="step">1</span>Depósito / ubicación</h2></div>
-        <select class="field" id="locationSelect" aria-label="Seleccionar depósito">
-          <option value="0120">0120 · Depósito 0120</option>
-          <option value="0056">0056 · Depósito 0056 real</option>
-          <option value="EX">EX · Exhibición 0056</option>
-        </select>
-        <p class="location-hint">La ubicación elegida se aplica a los próximos artículos.</p>
-      </section>
-
-      <section class="card group-card" aria-labelledby="groupTitle">
-        <div class="section-title">
-          <h2 id="groupTitle">Grupo / título de conteo</h2>
-          <span class="group-active" id="activeGroupTitle">Todos los grupos</span>
-        </div>
-        <label for="groupSelect">¿Qué grupo estás contando?</label>
-        <select class="field" id="groupSelect" aria-label="Elegir grupo de conteo"><option value="">Todos los grupos</option></select>
-        <p class="location-hint" id="groupHint">Elegí un grupo para ver solamente sus artículos. El título también te ayuda a identificar la subfamilia que estás contando.</p>
-      </section>
-
-      <section class="card progress-card" aria-labelledby="progressTitle">
-        <div class="section-title"><h2 id="progressTitle">Avance del conteo</h2><span class="count-pill" id="progressPercent">0%</span></div>
-        <div class="stats">
-          <div class="stat"><span>Códigos contados</span><strong id="progressCodes">0 / 0</strong></div>
-          <div class="stat"><span>Unidades contado / sistema</span><strong id="progressUnits">0 / 0</strong></div>
-        </div>
-        <div class="progress-track" aria-label="Progreso de códigos"><div class="progress-fill" id="progressBar"></div></div>
-        <p class="progress-note" id="progressNote">El avance y los estados usan el total de las tres ubicaciones. El selector solo define dónde se guardan los próximos escaneos.</p>
-      </section>
-
-      <section class="card" aria-labelledby="scanTitle">
-        <div class="section-title"><h2 id="scanTitle"><span class="step">2</span>Escanear o cargar artículo</h2></div>
-        <div id="mainMessage" class="message" role="status" aria-live="polite"></div>
-        <div class="scan-grid">
-          <div class="code-wrap">
-            <label for="codeInput">Código o descripción</label>
-            <input class="field" id="codeInput" type="text" placeholder="Escaneá o escribí el código" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done">
-            <div class="suggestions" id="suggestions" hidden></div>
-          </div>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#10243a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <title>Toma de stock</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --navy: #10243a;
+        --navy-2: #193a59;
+        --blue: #27628b;
+        --green: #16804a;
+        --green-soft: #e7f6ed;
+        --amber: #a96b08;
+        --amber-soft: #fff5df;
+        --red: #b42318;
+        --red-soft: #fff0ef;
+        --ink: #172433;
+        --muted: #627184;
+        --line: #dce4ec;
+        --surface: #ffffff;
+        --bg: #f2f5f8;
+        --shadow: 0 8px 24px rgba(16, 36, 58, 0.08);
+        --radius: 17px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      html {
+        min-height: 100%;
+        background: var(--bg);
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 0 0 calc(22px + env(safe-area-inset-bottom));
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+      button {
+        touch-action: manipulation;
+      }
+      .topbar {
+        padding: calc(13px + env(safe-area-inset-top)) 16px 17px;
+        background: linear-gradient(135deg, var(--navy), var(--navy-2));
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(16, 36, 58, 0.18);
+      }
+      .topline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+      .brand-icon {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        flex: 0 0 40px;
+        border-radius: 13px;
+        background: rgba(255, 255, 255, 0.13);
+        font-size: 21px;
+      }
+      .brand h1 {
+        margin: 0;
+        font-size: 19px;
+        line-height: 1.15;
+        letter-spacing: -0.35px;
+      }
+      .brand p {
+        margin: 3px 0 0;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 12px;
+      }
+      .connection {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex: 0 0 auto;
+        padding: 7px 9px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 999px;
+        color: #e9f1f8;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #65d99a;
+        box-shadow: 0 0 0 3px rgba(101, 217, 154, 0.14);
+      }
+      .connection.offline .dot {
+        background: #ffbf47;
+        box-shadow: 0 0 0 3px rgba(255, 191, 71, 0.14);
+      }
+      .wrap {
+        width: min(100%, 720px);
+        margin: 0 auto;
+        padding: 15px 13px 0;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid rgba(220, 228, 236, 0.9);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 16px;
+        margin-bottom: 13px;
+      }
+      .auth-card {
+        border-top: 4px solid var(--blue);
+      }
+      .auth-card .helper {
+        line-height: 1.5;
+      }
+      .section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin: 0 0 12px;
+      }
+      .section-title h2 {
+        margin: 0;
+        font-size: 15px;
+        letter-spacing: -0.15px;
+      }
+      .step {
+        display: inline-grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        margin-right: 7px;
+        border-radius: 8px;
+        background: #eaf1f7;
+        color: var(--navy-2);
+        font-size: 12px;
+        font-weight: 800;
+        vertical-align: middle;
+      }
+      label {
+        display: block;
+        margin: 0 0 7px;
+        color: #425266;
+        font-size: 12px;
+        font-weight: 750;
+      }
+      .field {
+        width: 100%;
+        min-height: 50px;
+        border: 1.5px solid var(--line);
+        border-radius: 12px;
+        padding: 0 13px;
+        background: #fff;
+        color: var(--ink);
+        outline: none;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+      .field:focus {
+        border-color: #3c82b3;
+        box-shadow: 0 0 0 3px rgba(60, 130, 179, 0.13);
+      }
+      select.field {
+        appearance: none;
+        padding-right: 40px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23536579' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 13px center;
+        font-weight: 750;
+      }
+      .location-card {
+        padding: 14px 16px;
+      }
+      .location-card .section-title {
+        margin-bottom: 9px;
+      }
+      .location-hint {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .scan-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 94px;
+        gap: 10px;
+        align-items: end;
+      }
+      .code-wrap {
+        position: relative;
+        min-width: 0;
+      }
+      #codeInput {
+        min-height: 58px;
+        font-size: 19px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+      #qtyInput {
+        min-height: 58px;
+        text-align: center;
+        font-size: 20px;
+        font-weight: 800;
+        padding: 0 8px;
+      }
+      .suggestions {
+        position: absolute;
+        z-index: 20;
+        top: calc(100% + 5px);
+        left: 0;
+        right: 0;
+        max-height: 260px;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        background: #fff;
+        box-shadow: 0 12px 28px rgba(16, 36, 58, 0.16);
+      }
+      .suggestion {
+        display: block;
+        width: 100%;
+        border: 0;
+        border-bottom: 1px solid #edf1f5;
+        padding: 11px 12px;
+        background: #fff;
+        text-align: left;
+        color: var(--ink);
+      }
+      .suggestion:last-child {
+        border-bottom: 0;
+      }
+      .suggestion:active {
+        background: #eef5fa;
+      }
+      .suggestion strong {
+        display: block;
+        font-size: 13px;
+      }
+      .suggestion small {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.35;
+      }
+      .helper {
+        margin: 8px 0 13px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.4;
+      }
+      .btn {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        min-height: 47px;
+        border: 0;
+        border-radius: 12px;
+        padding: 0 14px;
+        font-weight: 800;
+        cursor: pointer;
+        transition:
+          transform 0.08s,
+          filter 0.12s,
+          opacity 0.12s;
+      }
+      .btn:active {
+        transform: scale(0.985);
+      }
+      .btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .btn-primary {
+        width: 100%;
+        min-height: 54px;
+        background: var(--green);
+        color: #fff;
+        font-size: 16px;
+        box-shadow: 0 5px 13px rgba(22, 128, 74, 0.18);
+      }
+      .btn-secondary {
+        background: #edf3f8;
+        color: var(--navy-2);
+      }
+      .btn-outline {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--navy-2);
+      }
+      .btn-danger {
+        background: var(--red-soft);
+        color: var(--red);
+      }
+      .btn-small {
+        min-height: 36px;
+        padding: 0 10px;
+        border-radius: 10px;
+        font-size: 12px;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .toolbar .btn {
+        flex: 1 1 auto;
+      }
+      .message {
+        display: none;
+        margin: 0 0 12px;
+        padding: 11px 12px;
+        border-radius: 11px;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .message.show {
+        display: block;
+      }
+      .message.info {
+        background: #edf5fb;
+        color: #245a7e;
+      }
+      .message.success {
+        background: var(--green-soft);
+        color: #17613b;
+      }
+      .message.error {
+        background: var(--red-soft);
+        color: var(--red);
+      }
+      .message.warning {
+        background: var(--amber-soft);
+        color: #80520a;
+      }
+      .list-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .list-head h2 {
+        margin: 0;
+        font-size: 15px;
+      }
+      .count-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: #edf3f8;
+        color: var(--navy-2);
+        font-size: 11px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+        margin-bottom: 12px;
+      }
+      .stat {
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: #f5f8fb;
+      }
+      .stat span {
+        display: block;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 750;
+        text-transform: uppercase;
+        letter-spacing: 0.45px;
+      }
+      .stat strong {
+        display: block;
+        margin-top: 2px;
+        font-size: 21px;
+        letter-spacing: -0.5px;
+      }
+      .item-list {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+      }
+      .item {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px;
+        background: #fff;
+      }
+      .item-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 9px;
+      }
+      .item-code {
+        color: var(--navy);
+        font-size: 16px;
+        font-weight: 900;
+        letter-spacing: 0.35px;
+      }
+      .item-desc {
+        margin-top: 3px;
+        color: #526174;
+        font-size: 12px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+      .item-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-top: 9px;
+      }
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 5px 7px;
+        border-radius: 8px;
+        background: #f0f4f7;
+        color: #425266;
+        font-size: 10px;
+        font-weight: 750;
+      }
+      .tag.pending {
+        background: var(--amber-soft);
+        color: #875708;
+      }
+      .tag.sent {
+        background: var(--green-soft);
+        color: #17613b;
+      }
+      .item-actions {
+        display: flex;
+        gap: 7px;
+        margin-top: 11px;
+      }
+      .item-actions .btn {
+        flex: 1;
+      }
+      .empty {
+        padding: 25px 12px;
+        text-align: center;
+        color: var(--muted);
+      }
+      .empty .empty-icon {
+        font-size: 30px;
+      }
+      .empty strong {
+        display: block;
+        margin-top: 7px;
+        color: #425266;
+        font-size: 13px;
+      }
+      .empty p {
+        margin: 4px 0 0;
+        font-size: 11px;
+      }
+      .editor {
+        display: none;
+        margin-top: 11px;
+        padding: 11px;
+        border-radius: 12px;
+        background: #f5f8fb;
+      }
+      .editor.open {
+        display: block;
+      }
+      .editor-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 82px;
+        gap: 8px;
+      }
+      .editor .field {
+        min-height: 43px;
+      }
+      .editor-actions {
+        display: flex;
+        gap: 7px;
+        margin-top: 9px;
+      }
+      .editor-actions .btn {
+        flex: 1;
+      }
+      .footer-note {
+        padding: 4px 8px 0;
+        color: #738194;
+        text-align: center;
+        font-size: 10px;
+        line-height: 1.5;
+      }
+      .spinner {
+        width: 14px;
+        height: 14px;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .group-card {
+        border-top: 4px solid #27628b;
+      }
+      .group-active {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #eaf2f8;
+        color: #1d5277;
+        font-size: 11px;
+        font-weight: 850;
+      }
+      .progress-card {
+        border-left: 4px solid var(--green);
+      }
+      .progress-track {
+        width: 100%;
+        height: 10px;
+        overflow: hidden;
+        margin-top: 10px;
+        border-radius: 999px;
+        background: #e8edf2;
+      }
+      .progress-fill {
+        width: 0;
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #16804a, #36ae70);
+        transition: width 0.2s ease;
+      }
+      .progress-note {
+        margin: 9px 0 0;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.4;
+      }
+      .stock-search {
+        margin-bottom: 10px;
+      }
+      .filter-bar {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding: 1px 0 10px;
+      }
+      .filter-btn {
+        flex: 0 0 auto;
+        min-height: 35px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 0 11px;
+        background: #fff;
+        color: #536579;
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .filter-btn.active {
+        border-color: var(--navy-2);
+        background: var(--navy-2);
+        color: #fff;
+      }
+      .stock-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .stock-item {
+        padding: 11px;
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        background: #fff;
+      }
+      .stock-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .stock-code {
+        color: var(--navy);
+        font-size: 15px;
+        font-weight: 900;
+        letter-spacing: 0.3px;
+      }
+      .stock-desc {
+        margin-top: 3px;
+        color: #526174;
+        font-size: 12px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+      .stock-group {
+        margin-top: 6px;
+        color: #718096;
+        font-size: 10px;
+      }
+      .stock-values {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 9px;
+        padding: 8px;
+        border-radius: 9px;
+        background: #f5f8fb;
+      }
+      .stock-values span {
+        display: block;
+        color: var(--muted);
+        font-size: 10px;
+      }
+      .stock-values strong {
+        display: block;
+        margin-top: 2px;
+        color: var(--ink);
+        font-size: 14px;
+      }
+      .status-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 8px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 850;
+        white-space: nowrap;
+      }
+      .status-pending {
+        background: var(--amber-soft);
+        color: #875708;
+      }
+      .status-partial {
+        background: #fff0df;
+        color: #96520d;
+      }
+      .status-ok {
+        background: var(--green-soft);
+        color: #17613b;
+      }
+      .status-surplus {
+        background: var(--red-soft);
+        color: var(--red);
+      }
+      .stock-footnote {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.4;
+      }
+      .refresh-btn {
+        min-height: 36px;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        color: var(--navy-2);
+        font-size: 11px;
+        font-weight: 800;
+      }
+      @media (max-width: 380px) {
+        .stats {
+          gap: 6px;
+        }
+        .stat {
+          padding: 9px;
+        }
+        .stat strong {
+          font-size: 18px;
+        }
+      }
+      @media (min-width: 560px) {
+        .wrap {
+          padding-left: 18px;
+          padding-right: 18px;
+        }
+        .topbar {
+          padding-left: calc((100% - 684px) / 2 + 18px);
+          padding-right: calc((100% - 684px) / 2 + 18px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topline">
+        <div class="brand">
+          <div class="brand-icon" aria-hidden="true">📦</div>
           <div>
-            <label for="qtyInput">Cantidad</label>
-            <input class="field" id="qtyInput" type="number" inputmode="decimal" min="0.01" step="any" value="1">
+            <h1>Toma de stock</h1>
+            <p>Escaneo rápido · Conteo por ubicación</p>
           </div>
         </div>
-        <p class="helper">El lector puede enviar <b>Enter</b> al terminar. También podés buscar por descripción y confirmar con Enter o con el botón.</p>
-        <button class="btn btn-primary" id="addButton" type="button">＋ Agregar artículo</button>
+        <div class="connection" id="connectionBadge">
+          <span class="dot"></span><span id="connectionText">Sin sesión</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="card auth-card" id="authCard">
+        <div id="authSignedOut">
+          <div class="section-title"><h2>Acceso a C-Stock</h2></div>
+          <p class="helper">
+            Iniciá sesión con la cuenta Google autorizada por el administrador.
+          </p>
+          <button class="btn btn-primary" id="googleLoginButton" type="button">
+            Continuar con Google
+          </button>
+        </div>
+
+        <div id="authSignedIn" hidden>
+          <div class="section-title"><h2>Sesión iniciada</h2></div>
+          <p id="authIdentity" class="helper"></p>
+          <button class="btn btn-outline" id="signOutButton" type="button">
+            Cerrar sesión
+          </button>
+        </div>
+
+        <p id="authMessage" class="helper" role="status" aria-live="polite">
+          Comprobando sesión...
+        </p>
       </section>
 
-      <section class="card" aria-labelledby="listTitle">
-        <div class="list-head">
-          <h2 id="listTitle"><span class="step">3</span>Artículos de esta sesión</h2>
-          <span class="count-pill" id="itemCount">0 registros</span>
-        </div>
-        <div class="stats">
-          <div class="stat"><span>Registros</span><strong id="statRecords">0</strong></div>
-          <div class="stat"><span>Unidades</span><strong id="statUnits">0</strong></div>
-        </div>
-        <div id="queueMessage" class="message warning" role="status" aria-live="polite"></div>
-        <div class="toolbar" id="queueToolbar" style="display:none; margin-bottom:12px;">
-          <button class="btn btn-secondary" id="retryButton" type="button">↻ Reintentar envío</button>
-        </div>
-        <div class="item-list" id="itemList"></div>
-      </section>
+      <div id="appContent" hidden>
+        <section class="card location-card" aria-labelledby="locationTitle">
+          <div class="section-title">
+            <h2 id="locationTitle">
+              <span class="step">1</span>Depósito / ubicación
+            </h2>
+          </div>
+          <select
+            class="field"
+            id="locationSelect"
+            aria-label="Seleccionar depósito"
+          >
+            <option value="0120">0120 · Depósito 0120</option>
+            <option value="0056">0056 · Depósito 0056 real</option>
+            <option value="EX">EX · Exhibición 0056</option>
+          </select>
+          <p class="location-hint">
+            La ubicación elegida se aplica a los próximos artículos.
+          </p>
+        </section>
 
-      <section class="card" aria-labelledby="stockListTitle">
-        <div class="list-head">
-          <h2 id="stockListTitle">Códigos a buscar / Estado del stock</h2>
-          <button class="refresh-btn" id="refreshButton" type="button">↻ Actualizar</button>
-        </div>
-        <input class="field stock-search" id="stockSearch" type="search" placeholder="Buscar código o descripción..." autocomplete="off">
-        <div class="filter-bar" id="stockFilters" aria-label="Filtros de artículos">
-          <button class="filter-btn active" type="button" data-filter="all">Todos</button>
-          <button class="filter-btn" type="button" data-filter="pending">Pendientes por buscar</button>
-          <button class="filter-btn" type="button" data-filter="difference">Con diferencia</button>
-          <button class="filter-btn" type="button" data-filter="ok">OK</button>
-        </div>
-        <div class="stock-list" id="stockList"></div>
-        <p class="stock-footnote">“Parcial” significa que todavía se contó menos que el stock total del sistema. “Sobrante” significa que se contó más. Los números siempre suman 0120, 0056 y EX. Actualizá la lista para traer cambios hechos desde otros celulares.</p>
-      </section>
+        <section class="card group-card" aria-labelledby="groupTitle">
+          <div class="section-title">
+            <h2 id="groupTitle">Grupo / título de conteo</h2>
+            <span class="group-active" id="activeGroupTitle"
+              >Todos los grupos</span
+            >
+          </div>
+          <label for="groupSelect">¿Qué grupo estás contando?</label>
+          <select
+            class="field"
+            id="groupSelect"
+            aria-label="Elegir grupo de conteo"
+          >
+            <option value="">Todos los grupos</option>
+          </select>
+          <p class="location-hint" id="groupHint">
+            Elegí un grupo para ver solamente sus artículos. El título también
+            te ayuda a identificar la subfamilia que estás contando.
+          </p>
+        </section>
 
-      <section class="card">
-        <div class="section-title"><h2>Acceso a la planilla</h2></div>
-        <button class="btn btn-outline" id="sheetButton" type="button" style="width:100%;" disabled>↗ Ver en Google Sheets</button>
-        <p class="helper" style="margin-bottom:0;">La lista de esta pantalla se conserva en este celular. Abrí la planilla para comprobar los datos guardados en Google Sheets.</p>
-      </section>
-      <p class="footer-note">Los registros pendientes quedan guardados en este celular. El estado del stock se actualiza al sincronizar o al tocar “Actualizar”. No borres los datos del navegador hasta confirmar el envío.</p>
-    </div>
-  </main>
+        <section class="card progress-card" aria-labelledby="progressTitle">
+          <div class="section-title">
+            <h2 id="progressTitle">Avance del conteo</h2>
+            <span class="count-pill" id="progressPercent">0%</span>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <span>Códigos contados</span
+              ><strong id="progressCodes">0 / 0</strong>
+            </div>
+            <div class="stat">
+              <span>Unidades contado / sistema</span
+              ><strong id="progressUnits">0 / 0</strong>
+            </div>
+          </div>
+          <div class="progress-track" aria-label="Progreso de códigos">
+            <div class="progress-fill" id="progressBar"></div>
+          </div>
+          <p class="progress-note" id="progressNote">
+            El avance y los estados usan el total de las tres ubicaciones. El
+            selector solo define dónde se guardan los próximos escaneos.
+          </p>
+        </section>
 
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js';
-    import {
-  		getAuth,
- 		 GoogleAuthProvider,
-  		signInWithPopup,
- 		 onAuthStateChanged,
- 		 signOut
-} from 'https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js';
+        <section class="card" aria-labelledby="scanTitle">
+          <div class="section-title">
+            <h2 id="scanTitle">
+              <span class="step">2</span>Escanear o cargar artículo
+            </h2>
+          </div>
+          <div
+            id="mainMessage"
+            class="message"
+            role="status"
+            aria-live="polite"
+          ></div>
+          <div class="scan-grid">
+            <div class="code-wrap">
+              <label for="codeInput">Código o descripción</label>
+              <input
+                class="field"
+                id="codeInput"
+                type="text"
+                placeholder="Escaneá o escribí el código"
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                enterkeyhint="done"
+              />
+              <div class="suggestions" id="suggestions" hidden></div>
+            </div>
+            <div>
+              <label for="qtyInput">Cantidad</label>
+              <input
+                class="field"
+                id="qtyInput"
+                type="number"
+                inputmode="decimal"
+                min="0.01"
+                step="any"
+                value="1"
+              />
+            </div>
+          </div>
+          <p class="helper">
+            El lector puede enviar <b>Enter</b> al terminar. También podés
+            buscar por descripción y confirmar con Enter o con el botón.
+          </p>
+          <button class="btn btn-primary" id="addButton" type="button">
+            ＋ Agregar artículo
+          </button>
+        </section>
 
-    'use strict';
+        <section class="card" aria-labelledby="listTitle">
+          <div class="list-head">
+            <h2 id="listTitle">
+              <span class="step">3</span>Artículos de esta sesión
+            </h2>
+            <span class="count-pill" id="itemCount">0 registros</span>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <span>Registros</span><strong id="statRecords">0</strong>
+            </div>
+            <div class="stat">
+              <span>Unidades</span><strong id="statUnits">0</strong>
+            </div>
+          </div>
+          <div
+            id="queueMessage"
+            class="message warning"
+            role="status"
+            aria-live="polite"
+          ></div>
+          <div
+            class="toolbar"
+            id="queueToolbar"
+            style="display: none; margin-bottom: 12px"
+          >
+            <button class="btn btn-secondary" id="retryButton" type="button">
+              ↻ Reintentar envío
+            </button>
+          </div>
+          <div class="item-list" id="itemList"></div>
+        </section>
 
-    // La API Key web de Firebase es pública y se utiliza en el navegador.
-    // La autorización real se comprueba en Apps Script con el ID token.
-    const firebaseConfig = {
-      apiKey: 'AIzaSyBOw7_jykGCk0qSwNxAxFXgO6DFvgtPyAo',
-      authDomain: 'c-stock-e2071.firebaseapp.com',
-      projectId: 'c-stock-e2071',
-      storageBucket: 'c-stock-e2071.firebasestorage.app',
-      messagingSenderId: '433025298208',
-      appId: '1:433025298208:web:3ef4abf152158487feb145'
-    };
+        <section class="card" aria-labelledby="stockListTitle">
+          <div class="list-head">
+            <h2 id="stockListTitle">Códigos a buscar / Estado del stock</h2>
+            <button class="refresh-btn" id="refreshButton" type="button">
+              ↻ Actualizar
+            </button>
+          </div>
+          <input
+            class="field stock-search"
+            id="stockSearch"
+            type="search"
+            placeholder="Buscar código o descripción..."
+            autocomplete="off"
+          />
+          <div
+            class="filter-bar"
+            id="stockFilters"
+            aria-label="Filtros de artículos"
+          >
+            <button class="filter-btn active" type="button" data-filter="all">
+              Todos
+            </button>
+            <button class="filter-btn" type="button" data-filter="pending">
+              Pendientes por buscar
+            </button>
+            <button class="filter-btn" type="button" data-filter="difference">
+              Con diferencia
+            </button>
+            <button class="filter-btn" type="button" data-filter="ok">
+              OK
+            </button>
+          </div>
+          <div class="stock-list" id="stockList"></div>
+          <p class="stock-footnote">
+            “Parcial” significa que todavía se contó menos que el stock total
+            del sistema. “Sobrante” significa que se contó más. Los números
+            siempre suman 0120, 0056 y EX. Actualizá la lista para traer cambios
+            hechos desde otros celulares.
+          </p>
+        </section>
 
-    const firebaseApp = initializeApp(firebaseConfig);
-    const auth = getAuth(firebaseApp);
+        <section class="card">
+          <div class="section-title"><h2>Acceso a la planilla</h2></div>
+          <button
+            class="btn btn-outline"
+            id="sheetButton"
+            type="button"
+            style="width: 100%"
+            disabled
+          >
+            ↗ Ver en Google Sheets
+          </button>
+          <p class="helper" style="margin-bottom: 0">
+            La lista de esta pantalla se conserva en este celular. Abrí la
+            planilla para comprobar los datos guardados en Google Sheets.
+          </p>
+        </section>
+        <p class="footer-note">
+          Los registros pendientes quedan guardados en este celular. El estado
+          del stock se actualiza al sincronizar o al tocar “Actualizar”. No
+          borres los datos del navegador hasta confirmar el envío.
+        </p>
+      </div>
+    </main>
 
-    // URL del Web App de Google Apps Script.
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx_VhAaDPcw1nHQw6ZvAKs88f9eKJ111w3hOi5HFKOv2ErrlMvpKMBOeR1t1qID1ugI/exec';
-    const STORAGE_KEY_BASE =
-      'tomaStockApp_v2_' +
-      WEB_APP_URL.split('/').slice(-2, -1)[0] +
-      '_';
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+      import {
+        getAuth,
+        GoogleAuthProvider,
+        signInWithPopup,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
-    let STORAGE_KEY = '';
-    let authStateRun = 0;
-    let lastAuthUid = '';
+      ("use strict");
 
-    const $ = id => document.getElementById(id);
-
-    const state = {
-      catalog: [],
-      catalogByCode: new Map(),
-      groups: [],
-      activeGroup: '',
-      stockFilter: 'all',
-      sheetUrl: '',
-      rows: [],
-      queue: [],
-      sessionTombstones: [],
-      sending: false,
-      activeEditor: null,
-      selectedSuggestion: null,
-      lastError: ''
-    };
-
-    function normalizeText(value) {
-      return String(value ?? '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .trim()
-        .toLowerCase();
-    }
-
-    function normalizeCode(value) {
-      return String(value ?? '').trim().toUpperCase();
-    }
-
-    function shortCode(value) {
-      const clean = normalizeCode(value);
-      if (!clean) return '';
-      const match = clean.match(/^[A-Z]{2}\d{4}/);
-      return match ? match[0] : clean.slice(0, 6);
-    }
-
-    function makeId() {
-      if (window.crypto && typeof window.crypto.randomUUID === 'function') {
-        return window.crypto.randomUUID();
-      }
-      return 'req_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 12);
-    }
-
-    function persist() {
-      if (!STORAGE_KEY) return;
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          sheetUrl: state.sheetUrl,
-          activeGroup: state.activeGroup,
-          rows: state.rows,
-          queue: state.queue,
-          sessionTombstones: state.sessionTombstones,
-          catalog: state.catalog
-        }));
-      } catch (error) {
-        showMessage('mainMessage', 'No se pudo guardar en este dispositivo. Revisá el espacio disponible del navegador.', 'error');
-      }
-    }
-
-    function restore() {
-      if (!STORAGE_KEY) return;
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const saved = JSON.parse(raw);
-        state.sheetUrl = saved.sheetUrl || '';
-        state.activeGroup = saved.activeGroup || '';
-        state.rows = Array.isArray(saved.rows) ? saved.rows : [];
-        state.queue = Array.isArray(saved.queue) ? saved.queue : [];
-        state.sessionTombstones = Array.isArray(saved.sessionTombstones) ? saved.sessionTombstones : [];
-        state.catalog = Array.isArray(saved.catalog) ? saved.catalog : [];
-        rebuildCatalog();
-        state.rows.forEach(ensureRowSnapshot);
-      } catch (error) {
-        console.warn('No se pudo recuperar la sesión local:', error);
-      }
-    }
-
-    function clearSessionMemory() {
-      state.catalog = [];
-      state.catalogByCode = new Map();
-      state.groups = [];
-      state.activeGroup = '';
-      state.stockFilter = 'all';
-      state.sheetUrl = '';
-      state.rows = [];
-      state.queue = [];
-      state.sessionTombstones = [];
-      state.sending = false;
-      state.activeEditor = null;
-      state.selectedSuggestion = null;
-      state.lastError = '';
-    }
-
-    function rebuildCatalog() {
-      state.catalogByCode = new Map();
-      state.catalog.forEach(item => {
-        const code = shortCode(item.codigo || item.code || '');
-        if (!code) return;
-
-        const sis120 = Number(item.sis_120) || 0;
-        const sis56 = Number(item.sis_56) || 0;
-        const sisEx = Number(item.sis_ex) || 0;
-        const cont120 = Number(item.cont_120) || 0;
-        const cont56 = Number(item.cont_56) || 0;
-        const contEx = Number(item.cont_ex) || 0;
-        const rawSystemTotal = firstNumericValue(item, [
-          'sis_total', 'stock_total', 'stockTotal', 'total_sistema', 'totalSistema', 'stock total'
-        ]);
-        const hasSisTotal = rawSystemTotal !== null;
-        const hasContTotal = item.cont_total !== undefined && item.cont_total !== null && item.cont_total !== '';
-
-        const entry = {
-          ...item,
-          codigo: code,
-          descripcion: String(item.descripcion || item.description || '').trim(),
-          divisor: Math.max(Number(item.divisor || 1), 1),
-          familia: String(item.familia || '').trim(),
-          categoria: String(item.categoria || '').trim(),
-          subfamilia: String(item.subfamilia || '').trim(),
-          grupo: String(item.grupo || 'Stock importado').trim(),
-          sis_120: sis120,
-          sis_56: sis56,
-          sis_ex: sisEx,
-          sis_total: hasSisTotal ? rawSystemTotal : null,
-          cont_120: cont120,
-          cont_56: cont56,
-          cont_ex: contEx,
-          cont_total: hasContTotal ? (Number(item.cont_total) || 0) : cont120 + cont56 + contEx
-        };
-
-        if (!state.catalogByCode.has(code)) state.catalogByCode.set(code, entry);
-      });
-
-      state.groups = Array.from(new Set(state.catalog.flatMap(item =>
-        String(item.grupo || 'Stock importado').split(' | ').map(x => x.trim()).filter(Boolean)
-      ))).sort((a, b) => a.localeCompare(b, 'es'));
-
-      if (state.activeGroup && !state.groups.includes(state.activeGroup)) state.activeGroup = '';
-      if (!state.activeGroup && state.groups.length === 1) state.activeGroup = state.groups[0];
-    }
-
-    function firstNumericValue(object, keys) {
-      for (const key of keys) {
-        if (!Object.prototype.hasOwnProperty.call(object, key)) continue;
-        const value = object[key];
-        if (value === null || value === undefined || String(value).trim() === '') continue;
-        const parsed = typeof value === 'number' ? value : Number(String(value).replace(',', '.'));
-        if (Number.isFinite(parsed)) return parsed;
-      }
-      return null;
-    }
-
-    function showMessage(id, text, type = 'info') {
-      const el = $(id);
-      if (!el) return;
-      el.textContent = text;
-      el.className = 'message show ' + type;
-    }
-
-    function hideMessage(id) {
-      const el = $(id);
-      if (!el) return;
-      el.textContent = '';
-      el.className = 'message';
-    }
-
-    function setConnection() {
-      const online = navigator.onLine;
-      $('connectionBadge').classList.toggle('offline', !online);
-      $('connectionText').textContent = !online
-        ? 'Sin conexión'
-        : (auth.currentUser ? 'En línea' : 'Sin sesión');
-    }
-
-    async function initializeCatalog(quiet = false) {
-      try {
-        const data = await postToAppsScript({ action: 'catalog' });
-
-        if (!data || data.ok !== true) {
-          throw new Error(data && data.error ? data.error : 'Respuesta inválida del catálogo.');
-        }
-
-        state.catalog = Array.isArray(data.items) ? data.items : [];
-        state.sheetUrl = data.sheetUrl || state.sheetUrl;
-        rebuildCatalog();
-        reconcileSessionWithCatalog();
-        persist();
-
-        $('sheetButton').disabled = !state.sheetUrl;
-
-        if (data.usuario) {
-          const nombre = data.usuario.nombre || data.usuario.email || 'Usuario';
-          $('authIdentity').textContent = nombre + ' · ' + (data.usuario.rol || '');
-        }
-
-        if (!state.catalog.length && !quiet) {
-          showMessage('mainMessage', 'Todavía no hay artículos importados para buscar. Primero cargá StockDisponible desde el menú de la planilla.', 'warning');
-        } else if (!quiet && !state.queue.length) {
-          showMessage('mainMessage', 'Lista actualizada: ' + state.catalogByCode.size + ' códigos disponibles.', 'success');
-          window.setTimeout(() => hideMessage('mainMessage'), 2800);
-        }
-
-        render();
-        state.lastError = '';
-        return true;
-
-      } catch (error) {
-        state.lastError = error && error.message
-          ? error.message
-          : 'No se pudo validar el acceso al servidor.';
-
-        console.warn('Error al cargar catálogo autenticado:', error);
-
-        if (!quiet && state.catalog.length) {
-          showMessage('mainMessage', 'No se pudo actualizar. Se usa la última lista guardada en este celular.', 'warning');
-        } else if (!quiet) {
-          showMessage('mainMessage', 'No se pudo cargar la lista. ' + state.lastError, 'warning');
-        }
-
-        return false;
-      }
-    }
-
-    function searchCatalog(query) {
-      const q = normalizeText(query);
-      if (q.length < 2) return [];
-
-      return state.catalog
-        .map(item => ({
-          codigo: shortCode(item.codigo || ''),
-          descripcion: String(item.descripcion || '').trim(),
-          grupo: String(item.grupo || '').trim(),
-          familia: String(item.familia || '').trim(),
-          categoria: String(item.categoria || '').trim(),
-          subfamilia: String(item.subfamilia || '').trim()
-        }))
-        .filter(item => item.codigo && (
-          normalizeText(item.codigo).includes(q) ||
-          normalizeText(item.descripcion).includes(q) ||
-          normalizeText(item.grupo).includes(q) ||
-          normalizeText(item.familia).includes(q) ||
-          normalizeText(item.categoria).includes(q)
-        ))
-        .filter((item, index, arr) => arr.findIndex(x => x.codigo === item.codigo) === index)
-        .slice(0, 8);
-    }
-
-    function renderSuggestions() {
-      const input = $('codeInput');
-      const box = $('suggestions');
-      const query = input.value;
-      const code = shortCode(query);
-
-      if (!query.trim() || (code.length === 6 && /^[A-Z]{2}\d{4}$/.test(code))) {
-        box.hidden = true;
-        box.innerHTML = '';
-        state.selectedSuggestion = null;
-        return;
-      }
-
-      const found = searchCatalog(query);
-      if (!found.length) {
-        box.hidden = true;
-        box.innerHTML = '';
-        state.selectedSuggestion = null;
-        return;
-      }
-
-      box.innerHTML = found.map((item, index) =>
-        '<button class="suggestion" type="button" data-index="' + index + '"><strong>' + escapeHtml(item.codigo) + '</strong><small>' + escapeHtml(item.descripcion || 'Sin descripción') + (item.grupo ? ' · ' + escapeHtml(item.grupo) : '') + '</small></button>'
-      ).join('');
-      box.hidden = false;
-
-      Array.from(box.querySelectorAll('.suggestion')).forEach(button => {
-        button.addEventListener('pointerdown', event => event.preventDefault());
-        button.addEventListener('click', () => chooseSuggestion(found[Number(button.dataset.index)]));
-      });
-    }
-
-    function chooseSuggestion(item) {
-      if (!item) return;
-      state.selectedSuggestion = item;
-      $('codeInput').value = item.codigo;
-      $('suggestions').hidden = true;
-      $('suggestions').innerHTML = '';
-      $('qtyInput').focus();
-    }
-
-    function resolveCode(raw) {
-      const value = normalizeCode(raw);
-      if (!value) return '';
-      if (state.selectedSuggestion && normalizeText(value) === normalizeText(state.selectedSuggestion.codigo)) {
-        return state.selectedSuggestion.codigo;
-      }
-      const exact = state.catalogByCode.get(value);
-      if (exact) return exact.codigo;
-      const exactDescription = state.catalog.find(item => normalizeText(item.descripcion) === normalizeText(value));
-      if (exactDescription) return shortCode(exactDescription.codigo);
-      const results = searchCatalog(value);
-      if (results.length) return '';
-      if (/\s/.test(value)) return '';
-      return shortCode(value);
-    }
-
-    function getDescription(code) {
-      const found = state.catalogByCode.get(code);
-      return found ? found.descripcion : '';
-    }
-
-    function getCatalogItem(code) {
-      return state.catalogByCode.get(code) || null;
-    }
-
-    function validQuantity(raw) {
-      const value = Number(String(raw).replace(',', '.'));
-      return Number.isFinite(value) && value > 0 ? value : null;
-    }
-
-    function formatNumber(value) {
-      return new Intl.NumberFormat('es-AR', { maximumFractionDigits: 3 }).format(Number(value) || 0);
-    }
-
-    function addItem() {
-      if (!auth.currentUser) {
-        showMessage('mainMessage', 'Iniciá sesión antes de cargar artículos.', 'error');
-        return;
-      }
-
-      const raw = $('codeInput').value;
-      const code = resolveCode(raw);
-      const quantity = validQuantity($('qtyInput').value);
-
-      if (!code || code.length < 6) {
-        showMessage('mainMessage', 'Ingresá un código válido de al menos 6 caracteres o elegí un artículo del catálogo.', 'error');
-        $('codeInput').focus();
-        return;
-      }
-      if (!quantity) {
-        showMessage('mainMessage', 'La cantidad debe ser un número mayor que cero.', 'error');
-        $('qtyInput').focus();
-        return;
-      }
-
-      const id = makeId();
-      const location = $('locationSelect').value;
-      const item = {
-        id,
-        codigo: code,
-        descripcion: getDescription(code),
-        grupo: (getCatalogItem(code) || {}).grupo || '',
-        cantidad: quantity,
-        deposito: location,
-        createdAt: new Date().toISOString(),
-        status: 'pending',
-        remote: null,
-        snapshotCode: '',
-        snapshotUnits: 0,
-        serverCode: '',
-        serverUnits: 0
+      // La API Key web de Firebase es pública y se utiliza en el navegador.
+      // La autorización real se comprueba en Apps Script con el ID token.
+      const firebaseConfig = {
+        apiKey: "AIzaSyBOw7_jykGCk0qSwNxAxFXgO6DFvgtPyAo",
+        authDomain: "c-stock-e2071.firebaseapp.com",
+        projectId: "c-stock-e2071",
+        storageBucket: "c-stock-e2071.firebasestorage.app",
+        messagingSenderId: "433025298208",
+        appId: "1:433025298208:web:3ef4abf152158487feb145",
       };
 
-      state.rows.unshift(item);
-      state.queue.push({
-        id,
-        action: 'add',
-        payload: {
-          action: 'add',
-          requestId: id,
-          deposito: location,
-          codigo: code,
-          cantidad: quantity
-        }
-      });
+      const firebaseApp = initializeApp(firebaseConfig);
+      const auth = getAuth(firebaseApp);
 
-      persist();
-      render();
-      $('codeInput').value = '';
-      $('qtyInput').value = '1';
-      state.selectedSuggestion = null;
-      $('suggestions').hidden = true;
-      hideMessage('mainMessage');
-      focusCodeInput();
-      retryQueue();
-    }
+      // URL del Web App de Google Apps Script.
+      const WEB_APP_URL =
+        "https://script.google.com/macros/s/AKfycbx_VhAaDPcw1nHQw6ZvAKs88f9eKJ111w3hOi5HFKOv2ErrlMvpKMBOeR1t1qID1ugI/exec";
+      const STORAGE_KEY_BASE =
+        "tomaStockApp_v2_" + WEB_APP_URL.split("/").slice(-2, -1)[0] + "_";
 
-    async function postToAppsScript(payload) {
-      const user = auth.currentUser;
-      if (!user) throw new Error('No hay una sesión Google iniciada.');
+      let STORAGE_KEY = "";
+      let authStateRun = 0;
+      let lastAuthUid = "";
 
-      // Firebase renueva el token cuando corresponde. El UID/rol nunca se envía
-      // como dato de autorización: el servidor los obtiene del token verificado.
-      const idToken = await user.getIdToken();
-      const authenticatedPayload = { ...payload, idToken };
+      const $ = (id) => document.getElementById(id);
 
-      const frameName = 'appsScriptTransportFrame';
-      let frame = document.getElementById(frameName);
+      const state = {
+        catalog: [],
+        catalogByCode: new Map(),
+        groups: [],
+        activeGroup: "",
+        stockFilter: "all",
+        sheetUrl: "",
+        rows: [],
+        queue: [],
+        sessionTombstones: [],
+        sending: false,
+        activeEditor: null,
+        selectedSuggestion: null,
+        lastError: "",
+      };
 
-      if (!frame) {
-        frame = document.createElement('iframe');
-        frame.name = frameName;
-        frame.id = frameName;
-        frame.title = 'Transporte de datos a Google Apps Script';
-        frame.setAttribute('aria-hidden', 'true');
-        frame.style.display = 'none';
-        document.body.appendChild(frame);
+      function normalizeText(value) {
+        return String(value ?? "")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .trim()
+          .toLowerCase();
       }
 
-      const token = makeId();
+      function normalizeCode(value) {
+        return String(value ?? "")
+          .trim()
+          .toUpperCase();
+      }
 
-      return new Promise((resolve, reject) => {
-        let settled = false;
-        const timeout = window.setTimeout(() => {
-          finish(new Error('Apps Script no confirmó la operación a tiempo. Quedó pendiente para reintentar.'));
-        }, 30000);
+      function shortCode(value) {
+        const clean = normalizeCode(value);
+        if (!clean) return "";
+        const match = clean.match(/^[A-Z]{2}\d{4}/);
+        return match ? match[0] : clean.slice(0, 6);
+      }
 
-        function finish(error, data) {
-          if (settled) return;
-          settled = true;
-          window.clearTimeout(timeout);
-          window.removeEventListener('message', onMessage);
-          if (error) reject(error);
-          else resolve(data);
+      function makeId() {
+        if (window.crypto && typeof window.crypto.randomUUID === "function") {
+          return window.crypto.randomUUID();
         }
+        return (
+          "req_" +
+          Date.now().toString(36) +
+          "_" +
+          Math.random().toString(36).slice(2, 12)
+        );
+      }
 
-        function onMessage(event) {
-          // El mensaje debe proceder del iframe concreto usado para el POST.
-          if (event.source !== frame.contentWindow) return;
-
-          const message = event.data;
-          if (!message || message.source !== 'TOMA_STOCK_APPS_SCRIPT' || message.token !== token) return;
-
-          const data = message.data;
-          if (!data || data.ok !== true) {
-            finish(new Error(data && data.error ? data.error : 'Apps Script rechazó la operación.'));
-            return;
-          }
-          finish(null, data);
+      function persist() {
+        if (!STORAGE_KEY) return;
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              sheetUrl: state.sheetUrl,
+              activeGroup: state.activeGroup,
+              rows: state.rows,
+              queue: state.queue,
+              sessionTombstones: state.sessionTombstones,
+              catalog: state.catalog,
+            }),
+          );
+        } catch (error) {
+          showMessage(
+            "mainMessage",
+            "No se pudo guardar en este dispositivo. Revisá el espacio disponible del navegador.",
+            "error",
+          );
         }
+      }
 
-        window.addEventListener('message', onMessage);
+      function restore() {
+        if (!STORAGE_KEY) return;
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          const saved = JSON.parse(raw);
+          state.sheetUrl = saved.sheetUrl || "";
+          state.activeGroup = saved.activeGroup || "";
+          state.rows = Array.isArray(saved.rows) ? saved.rows : [];
+          state.queue = Array.isArray(saved.queue) ? saved.queue : [];
+          state.sessionTombstones = Array.isArray(saved.sessionTombstones)
+            ? saved.sessionTombstones
+            : [];
+          state.catalog = Array.isArray(saved.catalog) ? saved.catalog : [];
+          rebuildCatalog();
+          state.rows.forEach(ensureRowSnapshot);
+        } catch (error) {
+          console.warn("No se pudo recuperar la sesión local:", error);
+        }
+      }
 
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = WEB_APP_URL;
-        form.target = frameName;
-        form.acceptCharset = 'UTF-8';
-        form.style.display = 'none';
+      function clearSessionMemory() {
+        state.catalog = [];
+        state.catalogByCode = new Map();
+        state.groups = [];
+        state.activeGroup = "";
+        state.stockFilter = "all";
+        state.sheetUrl = "";
+        state.rows = [];
+        state.queue = [];
+        state.sessionTombstones = [];
+        state.sending = false;
+        state.activeEditor = null;
+        state.selectedSuggestion = null;
+        state.lastError = "";
+      }
 
-        const fields = {
-          transport: 'iframe',
-          token,
-          payload: JSON.stringify(authenticatedPayload)
-        };
+      function rebuildCatalog() {
+        state.catalogByCode = new Map();
+        state.catalog.forEach((item) => {
+          const code = shortCode(item.codigo || item.code || "");
+          if (!code) return;
 
-        Object.entries(fields).forEach(([name, value]) => {
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = name;
-          input.value = value;
-          form.appendChild(input);
+          const sis120 = Number(item.sis_120) || 0;
+          const sis56 = Number(item.sis_56) || 0;
+          const sisEx = Number(item.sis_ex) || 0;
+          const cont120 = Number(item.cont_120) || 0;
+          const cont56 = Number(item.cont_56) || 0;
+          const contEx = Number(item.cont_ex) || 0;
+          const rawSystemTotal = firstNumericValue(item, [
+            "sis_total",
+            "stock_total",
+            "stockTotal",
+            "total_sistema",
+            "totalSistema",
+            "stock total",
+          ]);
+          const hasSisTotal = rawSystemTotal !== null;
+          const hasContTotal =
+            item.cont_total !== undefined &&
+            item.cont_total !== null &&
+            item.cont_total !== "";
+
+          const entry = {
+            ...item,
+            codigo: code,
+            descripcion: String(
+              item.descripcion || item.description || "",
+            ).trim(),
+            divisor: Math.max(Number(item.divisor || 1), 1),
+            familia: String(item.familia || "").trim(),
+            categoria: String(item.categoria || "").trim(),
+            subfamilia: String(item.subfamilia || "").trim(),
+            grupo: String(item.grupo || "Stock importado").trim(),
+            sis_120: sis120,
+            sis_56: sis56,
+            sis_ex: sisEx,
+            sis_total: hasSisTotal ? rawSystemTotal : null,
+            cont_120: cont120,
+            cont_56: cont56,
+            cont_ex: contEx,
+            cont_total: hasContTotal
+              ? Number(item.cont_total) || 0
+              : cont120 + cont56 + contEx,
+          };
+
+          if (!state.catalogByCode.has(code))
+            state.catalogByCode.set(code, entry);
         });
 
-        document.body.appendChild(form);
-        form.submit();
-        form.remove();
-      });
-    }
+        state.groups = Array.from(
+          new Set(
+            state.catalog.flatMap((item) =>
+              String(item.grupo || "Stock importado")
+                .split(" | ")
+                .map((x) => x.trim())
+                .filter(Boolean),
+            ),
+          ),
+        ).sort((a, b) => a.localeCompare(b, "es"));
 
-    async function retryQueue() {
-      if (!auth.currentUser || state.sending || !navigator.onLine || !state.queue.length) return;
+        if (state.activeGroup && !state.groups.includes(state.activeGroup))
+          state.activeGroup = "";
+        if (!state.activeGroup && state.groups.length === 1)
+          state.activeGroup = state.groups[0];
+      }
 
-      state.sending = true;
-      renderQueueState();
+      function firstNumericValue(object, keys) {
+        for (const key of keys) {
+          if (!Object.prototype.hasOwnProperty.call(object, key)) continue;
+          const value = object[key];
+          if (
+            value === null ||
+            value === undefined ||
+            String(value).trim() === ""
+          )
+            continue;
+          const parsed =
+            typeof value === "number"
+              ? value
+              : Number(String(value).replace(",", "."));
+          if (Number.isFinite(parsed)) return parsed;
+        }
+        return null;
+      }
 
-      try {
-        while (state.queue.length && navigator.onLine && auth.currentUser) {
-          const op = state.queue[0];
-          const item = state.rows.find(row => row.id === op.id);
-          let payload;
+      function showMessage(id, text, type = "info") {
+        const el = $(id);
+        if (!el) return;
+        el.textContent = text;
+        el.className = "message show " + type;
+      }
 
-          if (op.action === 'add') {
-            payload = { ...op.payload };
-          } else {
-            const remote = op.remote || (item && item.remote);
-            if (!remote || !remote.hoja || !remote.fila) {
-              // El alta anterior todavía debe confirmarse. No se salta el orden.
-              break;
-            }
+      function hideMessage(id) {
+        const el = $(id);
+        if (!el) return;
+        el.textContent = "";
+        el.className = "message";
+      }
 
-            payload = {
-              action: op.action,
-              hoja: remote.hoja,
-              fila: remote.fila
-            };
+      function setConnection() {
+        const online = navigator.onLine;
+        $("connectionBadge").classList.toggle("offline", !online);
+        $("connectionText").textContent = !online
+          ? "Sin conexión"
+          : auth.currentUser
+            ? "En línea"
+            : "Sin sesión";
+      }
 
-            if (op.action === 'update') {
-              payload.codigo = op.codigo;
-              payload.cantidad = op.cantidad;
-            }
+      async function initializeCatalog(quiet = false) {
+        try {
+          const data = await postToAppsScript({ action: "catalog" });
+
+          if (!data || data.ok !== true) {
+            throw new Error(
+              data && data.error
+                ? data.error
+                : "Respuesta inválida del catálogo.",
+            );
           }
 
-          const result = await postToAppsScript(payload);
+          state.catalog = Array.isArray(data.items) ? data.items : [];
+          state.sheetUrl = data.sheetUrl || state.sheetUrl;
+          rebuildCatalog();
+          reconcileSessionWithCatalog();
+          persist();
 
-          if (op.action === 'add') {
-            const remote = { hoja: result.hoja, fila: Number(result.fila) };
-            if (!remote.hoja || !remote.fila) {
-              throw new Error('El servidor no devolvió la fila del artículo.');
-            }
+          $("sheetButton").disabled = !state.sheetUrl;
 
-            if (item) {
-              item.remote = remote;
-              item.status = 'sent';
-              item.serverCode = shortCode(op.payload.codigo);
-              item.serverUnits = countedUnitsForValues(
-                op.payload.codigo,
-                op.payload.cantidad,
-                op.payload.deposito
+          if (data.usuario) {
+            const nombre =
+              data.usuario.nombre || data.usuario.email || "Usuario";
+            $("authIdentity").textContent =
+              nombre + " · " + (data.usuario.rol || "");
+          }
+
+          if (!state.catalog.length && !quiet) {
+            showMessage(
+              "mainMessage",
+              "Todavía no hay artículos importados para buscar. Primero cargá StockDisponible desde el menú de la planilla.",
+              "warning",
+            );
+          } else if (!quiet && !state.queue.length) {
+            showMessage(
+              "mainMessage",
+              "Lista actualizada: " +
+                state.catalogByCode.size +
+                " códigos disponibles.",
+              "success",
+            );
+            window.setTimeout(() => hideMessage("mainMessage"), 2800);
+          }
+
+          render();
+          state.lastError = "";
+          return true;
+        } catch (error) {
+          state.lastError =
+            error && error.message
+              ? error.message
+              : "No se pudo validar el acceso al servidor.";
+
+          console.warn("Error al cargar catálogo autenticado:", error);
+
+          if (!quiet && state.catalog.length) {
+            showMessage(
+              "mainMessage",
+              "No se pudo actualizar. Se usa la última lista guardada en este celular.",
+              "warning",
+            );
+          } else if (!quiet) {
+            showMessage(
+              "mainMessage",
+              "No se pudo cargar la lista. " + state.lastError,
+              "warning",
+            );
+          }
+
+          return false;
+        }
+      }
+
+      function searchCatalog(query) {
+        const q = normalizeText(query);
+        if (q.length < 2) return [];
+
+        return state.catalog
+          .map((item) => ({
+            codigo: shortCode(item.codigo || ""),
+            descripcion: String(item.descripcion || "").trim(),
+            grupo: String(item.grupo || "").trim(),
+            familia: String(item.familia || "").trim(),
+            categoria: String(item.categoria || "").trim(),
+            subfamilia: String(item.subfamilia || "").trim(),
+          }))
+          .filter(
+            (item) =>
+              item.codigo &&
+              (normalizeText(item.codigo).includes(q) ||
+                normalizeText(item.descripcion).includes(q) ||
+                normalizeText(item.grupo).includes(q) ||
+                normalizeText(item.familia).includes(q) ||
+                normalizeText(item.categoria).includes(q)),
+          )
+          .filter(
+            (item, index, arr) =>
+              arr.findIndex((x) => x.codigo === item.codigo) === index,
+          )
+          .slice(0, 8);
+      }
+
+      function renderSuggestions() {
+        const input = $("codeInput");
+        const box = $("suggestions");
+        const query = input.value;
+        const code = shortCode(query);
+
+        if (
+          !query.trim() ||
+          (code.length === 6 && /^[A-Z]{2}\d{4}$/.test(code))
+        ) {
+          box.hidden = true;
+          box.innerHTML = "";
+          state.selectedSuggestion = null;
+          return;
+        }
+
+        const found = searchCatalog(query);
+        if (!found.length) {
+          box.hidden = true;
+          box.innerHTML = "";
+          state.selectedSuggestion = null;
+          return;
+        }
+
+        box.innerHTML = found
+          .map(
+            (item, index) =>
+              '<button class="suggestion" type="button" data-index="' +
+              index +
+              '"><strong>' +
+              escapeHtml(item.codigo) +
+              "</strong><small>" +
+              escapeHtml(item.descripcion || "Sin descripción") +
+              (item.grupo ? " · " + escapeHtml(item.grupo) : "") +
+              "</small></button>",
+          )
+          .join("");
+        box.hidden = false;
+
+        Array.from(box.querySelectorAll(".suggestion")).forEach((button) => {
+          button.addEventListener("pointerdown", (event) =>
+            event.preventDefault(),
+          );
+          button.addEventListener("click", () =>
+            chooseSuggestion(found[Number(button.dataset.index)]),
+          );
+        });
+      }
+
+      function chooseSuggestion(item) {
+        if (!item) return;
+        state.selectedSuggestion = item;
+        $("codeInput").value = item.codigo;
+        $("suggestions").hidden = true;
+        $("suggestions").innerHTML = "";
+        $("qtyInput").focus();
+      }
+
+      function resolveCode(raw) {
+        const value = normalizeCode(raw);
+        if (!value) return "";
+        if (
+          state.selectedSuggestion &&
+          normalizeText(value) ===
+            normalizeText(state.selectedSuggestion.codigo)
+        ) {
+          return state.selectedSuggestion.codigo;
+        }
+        const exact = state.catalogByCode.get(value);
+        if (exact) return exact.codigo;
+        const exactDescription = state.catalog.find(
+          (item) => normalizeText(item.descripcion) === normalizeText(value),
+        );
+        if (exactDescription) return shortCode(exactDescription.codigo);
+        const results = searchCatalog(value);
+        if (results.length) return "";
+        if (/\s/.test(value)) return "";
+        return shortCode(value);
+      }
+
+      function getDescription(code) {
+        const found = state.catalogByCode.get(code);
+        return found ? found.descripcion : "";
+      }
+
+      function getCatalogItem(code) {
+        return state.catalogByCode.get(code) || null;
+      }
+
+      function validQuantity(raw) {
+        const value = Number(String(raw).replace(",", "."));
+        return Number.isFinite(value) && value > 0 ? value : null;
+      }
+
+      function formatNumber(value) {
+        return new Intl.NumberFormat("es-AR", {
+          maximumFractionDigits: 3,
+        }).format(Number(value) || 0);
+      }
+
+      function addItem() {
+        if (!auth.currentUser) {
+          showMessage(
+            "mainMessage",
+            "Iniciá sesión antes de cargar artículos.",
+            "error",
+          );
+          return;
+        }
+
+        const raw = $("codeInput").value;
+        const code = resolveCode(raw);
+        const quantity = validQuantity($("qtyInput").value);
+
+        if (!code || code.length < 6) {
+          showMessage(
+            "mainMessage",
+            "Ingresá un código válido de al menos 6 caracteres o elegí un artículo del catálogo.",
+            "error",
+          );
+          $("codeInput").focus();
+          return;
+        }
+        if (!quantity) {
+          showMessage(
+            "mainMessage",
+            "La cantidad debe ser un número mayor que cero.",
+            "error",
+          );
+          $("qtyInput").focus();
+          return;
+        }
+
+        const id = makeId();
+        const location = $("locationSelect").value;
+        const item = {
+          id,
+          codigo: code,
+          descripcion: getDescription(code),
+          grupo: (getCatalogItem(code) || {}).grupo || "",
+          cantidad: quantity,
+          deposito: location,
+          createdAt: new Date().toISOString(),
+          status: "pending",
+          remote: null,
+          snapshotCode: "",
+          snapshotUnits: 0,
+          serverCode: "",
+          serverUnits: 0,
+        };
+
+        state.rows.unshift(item);
+        state.queue.push({
+          id,
+          action: "add",
+          payload: {
+            action: "add",
+            requestId: id,
+            deposito: location,
+            codigo: code,
+            cantidad: quantity,
+          },
+        });
+
+        persist();
+        render();
+        $("codeInput").value = "";
+        $("qtyInput").value = "1";
+        state.selectedSuggestion = null;
+        $("suggestions").hidden = true;
+        hideMessage("mainMessage");
+        focusCodeInput();
+        retryQueue();
+      }
+
+      async function postToAppsScript(payload) {
+        const user = auth.currentUser;
+        if (!user) throw new Error("No hay una sesión Google iniciada.");
+
+        // Firebase renueva el token cuando corresponde. El UID/rol nunca se envía
+        // como dato de autorización: el servidor los obtiene del token verificado.
+        const idToken = await user.getIdToken();
+        const authenticatedPayload = { ...payload, idToken };
+
+        const frameName = "appsScriptTransportFrame";
+        let frame = document.getElementById(frameName);
+
+        if (!frame) {
+          frame = document.createElement("iframe");
+          frame.name = frameName;
+          frame.id = frameName;
+          frame.title = "Transporte de datos a Google Apps Script";
+          frame.setAttribute("aria-hidden", "true");
+          frame.style.display = "none";
+          document.body.appendChild(frame);
+        }
+
+        const token = makeId();
+
+        return new Promise((resolve, reject) => {
+          let settled = false;
+          const timeout = window.setTimeout(() => {
+            finish(
+              new Error(
+                "Apps Script no confirmó la operación a tiempo. Quedó pendiente para reintentar.",
+              ),
+            );
+          }, 30000);
+
+          function finish(error, data) {
+            if (settled) return;
+            settled = true;
+            window.clearTimeout(timeout);
+            window.removeEventListener("message", onMessage);
+            if (error) reject(error);
+            else resolve(data);
+          }
+
+          function onMessage(event) {
+            // El mensaje debe proceder del iframe concreto usado para el POST.
+            if (event.source !== frame.contentWindow) return;
+
+            const message = event.data;
+            if (
+              !message ||
+              message.source !== "TOMA_STOCK_APPS_SCRIPT" ||
+              message.token !== token
+            )
+              return;
+
+            const data = message.data;
+            if (!data || data.ok !== true) {
+              finish(
+                new Error(
+                  data && data.error
+                    ? data.error
+                    : "Apps Script rechazó la operación.",
+                ),
               );
+              return;
+            }
+            finish(null, data);
+          }
+
+          window.addEventListener("message", onMessage);
+
+          const form = document.createElement("form");
+          form.method = "POST";
+          form.action = WEB_APP_URL;
+          form.target = frameName;
+          form.acceptCharset = "UTF-8";
+          form.style.display = "none";
+
+          const fields = {
+            transport: "iframe",
+            token,
+            payload: JSON.stringify(authenticatedPayload),
+          };
+
+          Object.entries(fields).forEach(([name, value]) => {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = name;
+            input.value = value;
+            form.appendChild(input);
+          });
+
+          document.body.appendChild(form);
+          form.submit();
+          form.remove();
+        });
+      }
+
+      async function retryQueue() {
+        if (
+          !auth.currentUser ||
+          state.sending ||
+          !navigator.onLine ||
+          !state.queue.length
+        )
+          return;
+
+        state.sending = true;
+        renderQueueState();
+
+        try {
+          while (state.queue.length && navigator.onLine && auth.currentUser) {
+            const op = state.queue[0];
+            const item = state.rows.find((row) => row.id === op.id);
+            let payload;
+
+            if (op.action === "add") {
+              payload = { ...op.payload };
             } else {
-              const tombstone = state.sessionTombstones.find(entry => entry.id === op.id);
-              if (tombstone) {
-                tombstone.serverCode = shortCode(op.payload.codigo);
-                tombstone.serverUnits = countedUnitsForValues(
-                  op.payload.codigo,
-                  op.payload.cantidad,
-                  op.payload.deposito
-                );
+              const remote = op.remote || (item && item.remote);
+              if (!remote || !remote.hoja || !remote.fila) {
+                // El alta anterior todavía debe confirmarse. No se salta el orden.
+                break;
+              }
+
+              payload = {
+                action: op.action,
+                hoja: remote.hoja,
+                fila: remote.fila,
+              };
+
+              if (op.action === "update") {
+                payload.codigo = op.codigo;
+                payload.cantidad = op.cantidad;
               }
             }
 
-            state.queue.slice(1)
-              .filter(next => next.id === op.id)
-              .forEach(next => { next.remote = remote; });
+            const result = await postToAppsScript(payload);
 
-          } else if (op.action === 'update') {
-            const tombstone = state.sessionTombstones.find(entry => entry.id === op.id);
-            const depositoConfirmado = op.deposito ||
-              (item && item.deposito) ||
-              (tombstone && tombstone.deposito) ||
-              '0120';
-            const confirmedCode = shortCode(op.codigo);
-            const confirmedUnits = countedUnitsForValues(op.codigo, op.cantidad, depositoConfirmado);
+            if (op.action === "add") {
+              const remote = { hoja: result.hoja, fila: Number(result.fila) };
+              if (!remote.hoja || !remote.fila) {
+                throw new Error(
+                  "El servidor no devolvió la fila del artículo.",
+                );
+              }
 
-            if (item) {
-              item.status = 'sent';
-              item.serverCode = confirmedCode;
-              item.serverUnits = confirmedUnits;
-            } else if (tombstone) {
-              tombstone.serverCode = confirmedCode;
-              tombstone.serverUnits = confirmedUnits;
-              tombstone.deposito = depositoConfirmado;
+              if (item) {
+                item.remote = remote;
+                item.status = "sent";
+                item.serverCode = shortCode(op.payload.codigo);
+                item.serverUnits = countedUnitsForValues(
+                  op.payload.codigo,
+                  op.payload.cantidad,
+                  op.payload.deposito,
+                );
+              } else {
+                const tombstone = state.sessionTombstones.find(
+                  (entry) => entry.id === op.id,
+                );
+                if (tombstone) {
+                  tombstone.serverCode = shortCode(op.payload.codigo);
+                  tombstone.serverUnits = countedUnitsForValues(
+                    op.payload.codigo,
+                    op.payload.cantidad,
+                    op.payload.deposito,
+                  );
+                }
+              }
+
+              state.queue
+                .slice(1)
+                .filter((next) => next.id === op.id)
+                .forEach((next) => {
+                  next.remote = remote;
+                });
+            } else if (op.action === "update") {
+              const tombstone = state.sessionTombstones.find(
+                (entry) => entry.id === op.id,
+              );
+              const depositoConfirmado =
+                op.deposito ||
+                (item && item.deposito) ||
+                (tombstone && tombstone.deposito) ||
+                "0120";
+              const confirmedCode = shortCode(op.codigo);
+              const confirmedUnits = countedUnitsForValues(
+                op.codigo,
+                op.cantidad,
+                depositoConfirmado,
+              );
+
+              if (item) {
+                item.status = "sent";
+                item.serverCode = confirmedCode;
+                item.serverUnits = confirmedUnits;
+              } else if (tombstone) {
+                tombstone.serverCode = confirmedCode;
+                tombstone.serverUnits = confirmedUnits;
+                tombstone.deposito = depositoConfirmado;
+              }
             }
+
+            state.queue.shift();
+            persist();
+            render();
           }
 
-          state.queue.shift();
+          state.lastError = "";
+        } catch (error) {
+          state.lastError = error.message || "No se pudo completar el envío.";
+          console.warn("Envío pendiente:", error);
+        } finally {
+          state.sending = false;
           persist();
           render();
+
+          if (
+            state.queue.length === 0 &&
+            auth.currentUser &&
+            navigator.onLine
+          ) {
+            const refreshed = await initializeCatalog(true);
+            if (refreshed) {
+              showMessage(
+                "mainMessage",
+                "Sincronización completada. La lista y el avance ya están actualizados.",
+                "success",
+              );
+              window.setTimeout(() => hideMessage("mainMessage"), 3000);
+            }
+          }
+        }
+      }
+
+      function updateItem(id, codeRaw, quantityRaw) {
+        const item = state.rows.find((row) => row.id === id);
+        if (!item) return;
+
+        const code = resolveCode(codeRaw);
+        const quantity = validQuantity(quantityRaw);
+
+        if (!code || code.length < 6) {
+          showMessage(
+            "mainMessage",
+            "El código debe tener al menos 6 caracteres.",
+            "error",
+          );
+          return;
+        }
+        if (!quantity) {
+          showMessage(
+            "mainMessage",
+            "Ingresá una cantidad mayor que cero.",
+            "error",
+          );
+          return;
         }
 
-        state.lastError = '';
+        ensureRowSnapshot(item);
+        item.codigo = code;
+        item.descripcion = getDescription(code);
+        item.grupo = (getCatalogItem(code) || {}).grupo || "";
+        item.cantidad = quantity;
+        item.status = "pending";
 
-      } catch (error) {
-        state.lastError = error.message || 'No se pudo completar el envío.';
-        console.warn('Envío pendiente:', error);
+        state.queue.push({
+          id,
+          action: "update",
+          codigo: code,
+          cantidad: quantity,
+          remote: item.remote || null,
+        });
 
-      } finally {
-        state.sending = false;
+        state.activeEditor = null;
         persist();
         render();
+        retryQueue();
+      }
 
-        if (state.queue.length === 0 && auth.currentUser && navigator.onLine) {
-          const refreshed = await initializeCatalog(true);
-          if (refreshed) {
-            showMessage('mainMessage', 'Sincronización completada. La lista y el avance ya están actualizados.', 'success');
-            window.setTimeout(() => hideMessage('mainMessage'), 3000);
-          }
+      function deleteItem(id) {
+        const index = state.rows.findIndex((row) => row.id === id);
+        if (index < 0) return;
+
+        const item = state.rows[index];
+        ensureRowSnapshot(item);
+        const hasQueuedAdd = state.queue.some(
+          (op) => op.id === id && op.action === "add",
+        );
+
+        if (item.remote || hasQueuedAdd) {
+          state.queue.push({
+            id,
+            action: "delete",
+            remote: item.remote || null,
+          });
         }
-      }
-    }
 
-    function updateItem(id, codeRaw, quantityRaw) {
-      const item = state.rows.find(row => row.id === id);
-      if (!item) return;
+        const tombstoneCode = item.snapshotCode || item.serverCode || "";
+        const tombstoneUnits =
+          Number(item.snapshotUnits) > 0.000001
+            ? Number(item.snapshotUnits)
+            : Number(item.serverUnits) || 0;
 
-      const code = resolveCode(codeRaw);
-      const quantity = validQuantity(quantityRaw);
+        if (tombstoneCode && tombstoneUnits > 0.000001) {
+          state.sessionTombstones.push({
+            id: item.id,
+            codigo: shortCode(tombstoneCode),
+            units: tombstoneUnits,
+            serverCode: item.serverCode || "",
+            serverUnits: Number(item.serverUnits) || 0,
+            deposito: item.deposito || "0120",
+            grupo: item.grupo || "",
+          });
+        }
 
-      if (!code || code.length < 6) {
-        showMessage('mainMessage', 'El código debe tener al menos 6 caracteres.', 'error');
-        return;
-      }
-      if (!quantity) {
-        showMessage('mainMessage', 'Ingresá una cantidad mayor que cero.', 'error');
-        return;
-      }
-
-      ensureRowSnapshot(item);
-      item.codigo = code;
-      item.descripcion = getDescription(code);
-      item.grupo = (getCatalogItem(code) || {}).grupo || '';
-      item.cantidad = quantity;
-      item.status = 'pending';
-
-      state.queue.push({
-        id,
-        action: 'update',
-        codigo: code,
-        cantidad: quantity,
-        remote: item.remote || null
-      });
-
-      state.activeEditor = null;
-      persist();
-      render();
-      retryQueue();
-    }
-
-    function deleteItem(id) {
-      const index = state.rows.findIndex(row => row.id === id);
-      if (index < 0) return;
-
-      const item = state.rows[index];
-      ensureRowSnapshot(item);
-      const hasQueuedAdd = state.queue.some(op => op.id === id && op.action === 'add');
-
-      if (item.remote || hasQueuedAdd) {
-        state.queue.push({ id, action: 'delete', remote: item.remote || null });
+        state.rows.splice(index, 1);
+        if (state.activeEditor === id) state.activeEditor = null;
+        persist();
+        render();
+        retryQueue();
       }
 
-      const tombstoneCode = item.snapshotCode || item.serverCode || '';
-      const tombstoneUnits = Number(item.snapshotUnits) > 0.000001
-        ? Number(item.snapshotUnits)
-        : (Number(item.serverUnits) || 0);
-
-      if (tombstoneCode && tombstoneUnits > 0.000001) {
-        state.sessionTombstones.push({
-          id: item.id,
-          codigo: shortCode(tombstoneCode),
-          units: tombstoneUnits,
-          serverCode: item.serverCode || '',
-          serverUnits: Number(item.serverUnits) || 0,
-          deposito: item.deposito || '0120',
-          grupo: item.grupo || ''
-        });
+      function render() {
+        renderGroupSelector();
+        renderItems();
+        renderQueueState();
+        renderProgress();
+        renderStockList();
+        $("sheetButton").disabled = !state.sheetUrl;
       }
 
-      state.rows.splice(index, 1);
-      if (state.activeEditor === id) state.activeEditor = null;
-      persist();
-      render();
-      retryQueue();
-    }
+      function renderGroupSelector() {
+        const select = $("groupSelect");
+        const signature = state.groups.join("||");
+        if (select.dataset.signature !== signature) {
+          select.innerHTML =
+            '<option value="">Todos los grupos</option>' +
+            state.groups
+              .map(
+                (group) =>
+                  '<option value="' +
+                  escapeHtml(group) +
+                  '">' +
+                  escapeHtml(group) +
+                  "</option>",
+              )
+              .join("");
+          select.dataset.signature = signature;
+        }
 
-    function render() {
-      renderGroupSelector();
-      renderItems();
-      renderQueueState();
-      renderProgress();
-      renderStockList();
-      $('sheetButton').disabled = !state.sheetUrl;
-    }
-
-    function renderGroupSelector() {
-      const select = $('groupSelect');
-      const signature = state.groups.join('||');
-      if (select.dataset.signature !== signature) {
-        select.innerHTML = '<option value="">Todos los grupos</option>' + state.groups.map(group =>
-          '<option value="' + escapeHtml(group) + '">' + escapeHtml(group) + '</option>'
-        ).join('');
-        select.dataset.signature = signature;
+        select.value = state.activeGroup;
+        $("activeGroupTitle").textContent =
+          state.activeGroup || "Todos los grupos";
+        $("groupHint").textContent = state.activeGroup
+          ? "Estás viendo el grupo “" +
+            state.activeGroup +
+            "”. El avance y la lista de búsqueda se filtran por este título."
+          : "Estás viendo todos los grupos importados. Podés elegir uno para concentrarte en una subfamilia.";
       }
 
-      select.value = state.activeGroup;
-      $('activeGroupTitle').textContent = state.activeGroup || 'Todos los grupos';
-      $('groupHint').textContent = state.activeGroup
-        ? 'Estás viendo el grupo “' + state.activeGroup + '”. El avance y la lista de búsqueda se filtran por este título.'
-        : 'Estás viendo todos los grupos importados. Podés elegir uno para concentrarte en una subfamilia.';
-    }
-
-    function groupMatches(item) {
-      if (!state.activeGroup) return true;
-      return String(item.grupo || '').split(' | ').map(x => x.trim()).includes(state.activeGroup);
-    }
-
-    function stockItemsForActiveGroup() {
-      return state.catalog.filter(item => groupMatches(item));
-    }
-
-    function countedUnitsForValues(code, quantityValue, deposito) {
-      const quantity = Number(quantityValue) || 0;
-      if (deposito === 'EX') return quantity;
-      const catalogItem = state.catalogByCode.get(shortCode(code));
-      const divisor = Math.max(Number((catalogItem && catalogItem.divisor) || 1), 1);
-      return quantity / divisor;
-    }
-
-    function countedUnitsForRow(row) {
-      return countedUnitsForValues(row.codigo, row.cantidad, row.deposito);
-    }
-
-    function ensureRowSnapshot(row) {
-      if (Object.prototype.hasOwnProperty.call(row, 'snapshotCode') &&
-          Object.prototype.hasOwnProperty.call(row, 'snapshotUnits')) return;
-
-      if (row.remote && row.serverCode && Number.isFinite(Number(row.serverUnits))) {
-        row.snapshotCode = shortCode(row.serverCode);
-        row.snapshotUnits = Number(row.serverUnits) || 0;
-      } else if (row.remote && row.status === 'sent') {
-        row.snapshotCode = shortCode(row.codigo);
-        row.snapshotUnits = countedUnitsForRow(row);
-      } else {
-        row.snapshotCode = '';
-        row.snapshotUnits = 0;
+      function groupMatches(item) {
+        if (!state.activeGroup) return true;
+        return String(item.grupo || "")
+          .split(" | ")
+          .map((x) => x.trim())
+          .includes(state.activeGroup);
       }
-    }
 
-    function reconcileSessionWithCatalog() {
-      state.rows.forEach(row => {
-        ensureRowSnapshot(row);
-        if (row.remote && row.serverCode && Number.isFinite(Number(row.serverUnits))) {
+      function stockItemsForActiveGroup() {
+        return state.catalog.filter((item) => groupMatches(item));
+      }
+
+      function countedUnitsForValues(code, quantityValue, deposito) {
+        const quantity = Number(quantityValue) || 0;
+        if (deposito === "EX") return quantity;
+        const catalogItem = state.catalogByCode.get(shortCode(code));
+        const divisor = Math.max(
+          Number((catalogItem && catalogItem.divisor) || 1),
+          1,
+        );
+        return quantity / divisor;
+      }
+
+      function countedUnitsForRow(row) {
+        return countedUnitsForValues(row.codigo, row.cantidad, row.deposito);
+      }
+
+      function ensureRowSnapshot(row) {
+        if (
+          Object.prototype.hasOwnProperty.call(row, "snapshotCode") &&
+          Object.prototype.hasOwnProperty.call(row, "snapshotUnits")
+        )
+          return;
+
+        if (
+          row.remote &&
+          row.serverCode &&
+          Number.isFinite(Number(row.serverUnits))
+        ) {
           row.snapshotCode = shortCode(row.serverCode);
           row.snapshotUnits = Number(row.serverUnits) || 0;
+        } else if (row.remote && row.status === "sent") {
+          row.snapshotCode = shortCode(row.codigo);
+          row.snapshotUnits = countedUnitsForRow(row);
         } else {
-          const hasPendingOperation = state.queue.some(operation => operation.id === row.id);
-          if (row.remote && row.status === 'sent' && !hasPendingOperation) {
-            row.snapshotCode = shortCode(row.codigo);
-            row.snapshotUnits = countedUnitsForRow(row);
+          row.snapshotCode = "";
+          row.snapshotUnits = 0;
+        }
+      }
+
+      function reconcileSessionWithCatalog() {
+        state.rows.forEach((row) => {
+          ensureRowSnapshot(row);
+          if (
+            row.remote &&
+            row.serverCode &&
+            Number.isFinite(Number(row.serverUnits))
+          ) {
+            row.snapshotCode = shortCode(row.serverCode);
+            row.snapshotUnits = Number(row.serverUnits) || 0;
+          } else {
+            const hasPendingOperation = state.queue.some(
+              (operation) => operation.id === row.id,
+            );
+            if (row.remote && row.status === "sent" && !hasPendingOperation) {
+              row.snapshotCode = shortCode(row.codigo);
+              row.snapshotUnits = countedUnitsForRow(row);
+            }
           }
-        }
-      });
+        });
 
-      state.sessionTombstones.forEach(tombstone => {
-        if (tombstone.serverCode && Number.isFinite(Number(tombstone.serverUnits))) {
-          tombstone.codigo = shortCode(tombstone.serverCode);
-          tombstone.units = Number(tombstone.serverUnits) || 0;
-        }
-      });
+        state.sessionTombstones.forEach((tombstone) => {
+          if (
+            tombstone.serverCode &&
+            Number.isFinite(Number(tombstone.serverUnits))
+          ) {
+            tombstone.codigo = shortCode(tombstone.serverCode);
+            tombstone.units = Number(tombstone.serverUnits) || 0;
+          }
+        });
 
-      if (!state.queue.length) state.sessionTombstones = [];
-    }
-
-    function localCountDeltaForCode(code) {
-      const target = shortCode(code);
-      let delta = 0;
-
-      state.rows.forEach(row => {
-        ensureRowSnapshot(row);
-        if (shortCode(row.codigo) === target) delta += countedUnitsForRow(row);
-        if (shortCode(row.snapshotCode) === target) delta -= Number(row.snapshotUnits) || 0;
-      });
-
-      state.sessionTombstones.forEach(tombstone => {
-        if (shortCode(tombstone.codigo) === target) delta -= Number(tombstone.units) || 0;
-      });
-
-      return delta;
-    }
-
-    function stockNumbers(item) {
-      const hasSystemTotal = item.sis_total !== undefined &&
-        item.sis_total !== null && item.sis_total !== '' &&
-        Number.isFinite(Number(item.sis_total));
-      const hasCountedTotal = item.cont_total !== undefined &&
-        item.cont_total !== null && item.cont_total !== '' &&
-        Number.isFinite(Number(item.cont_total));
-
-      const system = hasSystemTotal ? Number(item.sis_total) : null;
-      const trackedSystem = Number(item.sis_120 || 0) + Number(item.sis_56 || 0) + Number(item.sis_ex || 0);
-      const outsideTracked = system === null ? null : Math.max(0, system - trackedSystem);
-      const serverCounted = hasCountedTotal
-        ? Number(item.cont_total)
-        : (Number(item.cont_120 || 0) + Number(item.cont_56 || 0) + Number(item.cont_ex || 0));
-      const counted = Math.max(0, serverCounted + localCountDeltaForCode(item.codigo));
-
-      return { system, counted, trackedSystem, outsideTracked };
-    }
-
-    function stockStatus(item) {
-      const values = stockNumbers(item);
-      const epsilon = 0.000001;
-      if (values.counted <= epsilon) return { key: 'pending', label: 'Pendiente' };
-      if (values.system === null) return { key: 'partial', label: 'Sin total de sistema' };
-      if (values.counted > values.system + epsilon) return { key: 'surplus', label: 'Sobrante' };
-      if (values.counted + epsilon < values.system) return { key: 'partial', label: 'Parcial' };
-      return { key: 'ok', label: 'OK' };
-    }
-
-    function renderProgress() {
-      const items = stockItemsForActiveGroup();
-
-      if (!items.length) {
-        $('progressCodes').textContent = '0 / 0';
-        $('progressUnits').textContent = '0 / 0';
-        $('progressPercent').textContent = '0%';
-        $('progressBar').style.width = '0%';
-        $('progressNote').textContent = 'Todavía no hay artículos importados para este grupo. Importá StockDisponible desde el menú de la planilla.';
-        return;
+        if (!state.queue.length) state.sessionTombstones = [];
       }
 
-      const totals = items.reduce((acc, item) => {
+      function localCountDeltaForCode(code) {
+        const target = shortCode(code);
+        let delta = 0;
+
+        state.rows.forEach((row) => {
+          ensureRowSnapshot(row);
+          if (shortCode(row.codigo) === target)
+            delta += countedUnitsForRow(row);
+          if (shortCode(row.snapshotCode) === target)
+            delta -= Number(row.snapshotUnits) || 0;
+        });
+
+        state.sessionTombstones.forEach((tombstone) => {
+          if (shortCode(tombstone.codigo) === target)
+            delta -= Number(tombstone.units) || 0;
+        });
+
+        return delta;
+      }
+
+      function stockNumbers(item) {
+        const hasSystemTotal =
+          item.sis_total !== undefined &&
+          item.sis_total !== null &&
+          item.sis_total !== "" &&
+          Number.isFinite(Number(item.sis_total));
+        const hasCountedTotal =
+          item.cont_total !== undefined &&
+          item.cont_total !== null &&
+          item.cont_total !== "" &&
+          Number.isFinite(Number(item.cont_total));
+
+        const system = hasSystemTotal ? Number(item.sis_total) : null;
+        const trackedSystem =
+          Number(item.sis_120 || 0) +
+          Number(item.sis_56 || 0) +
+          Number(item.sis_ex || 0);
+        const outsideTracked =
+          system === null ? null : Math.max(0, system - trackedSystem);
+        const serverCounted = hasCountedTotal
+          ? Number(item.cont_total)
+          : Number(item.cont_120 || 0) +
+            Number(item.cont_56 || 0) +
+            Number(item.cont_ex || 0);
+        const counted = Math.max(
+          0,
+          serverCounted + localCountDeltaForCode(item.codigo),
+        );
+
+        return { system, counted, trackedSystem, outsideTracked };
+      }
+
+      function stockStatus(item) {
         const values = stockNumbers(item);
-        if (values.system !== null) acc.system += values.system;
-        acc.counted += values.counted;
-        if (values.counted > 0.000001) acc.codes++;
-        return acc;
-      }, { system: 0, counted: 0, codes: 0 });
-
-      const percent = Math.min(100, totals.codes / items.length * 100);
-      $('progressCodes').textContent = formatNumber(totals.codes) + ' / ' + formatNumber(items.length);
-      $('progressUnits').textContent = formatNumber(totals.counted) + ' / ' + formatNumber(totals.system);
-      $('progressPercent').textContent = formatNumber(percent) + '%';
-      $('progressBar').style.width = percent + '%';
-      $('progressNote').textContent = (state.activeGroup ? 'Grupo: ' + state.activeGroup + '. ' : 'Todos los grupos. ') +
-        'El avance suma 0120 + 0056 + EX. La ubicación seleccionada (' + locationLabel($('locationSelect').value) +
-        ') solo indica dónde se guardarán los próximos escaneos.';
-    }
-
-    function renderStockList() {
-      const list = $('stockList');
-      const query = normalizeText($('stockSearch').value || '');
-      const all = stockItemsForActiveGroup();
-
-      const filtered = all.filter(item => {
-        const status = stockStatus(item);
-        const text = [item.codigo, item.descripcion, item.grupo, item.familia, item.categoria, item.subfamilia].join(' ');
-        if (query && !normalizeText(text).includes(query)) return false;
-        if (state.stockFilter === 'pending' && status.key !== 'pending') return false;
-        if (state.stockFilter === 'difference' && !['partial', 'surplus'].includes(status.key)) return false;
-        if (state.stockFilter === 'ok' && status.key !== 'ok') return false;
-        return true;
-      });
-
-      Array.from($('stockFilters').querySelectorAll('[data-filter]')).forEach(button => {
-        button.classList.toggle('active', button.dataset.filter === state.stockFilter);
-      });
-
-      if (!all.length) {
-        list.innerHTML = '<div class="empty"><div class="empty-icon">📦</div><strong>No hay artículos para mostrar</strong><p>Importá uno o varios archivos StockDisponible desde el menú de la planilla.</p></div>';
-        return;
-      }
-      if (!filtered.length) {
-        list.innerHTML = '<div class="empty"><div class="empty-icon">🔎</div><strong>No hay coincidencias</strong><p>Probá otro texto o elegí el filtro “Todos”.</p></div>';
-        return;
+        const epsilon = 0.000001;
+        if (values.counted <= epsilon)
+          return { key: "pending", label: "Pendiente" };
+        if (values.system === null)
+          return { key: "partial", label: "Sin total de sistema" };
+        if (values.counted > values.system + epsilon)
+          return { key: "surplus", label: "Sobrante" };
+        if (values.counted + epsilon < values.system)
+          return { key: "partial", label: "Parcial" };
+        return { key: "ok", label: "OK" };
       }
 
-      const maxVisible = 120;
-      list.innerHTML = filtered.slice(0, maxVisible).map(item => {
-        const values = stockNumbers(item);
-        const status = stockStatus(item);
-        const groupText = [item.grupo, item.subfamilia, item.familia, item.categoria]
-          .filter(Boolean)
-          .filter((v, i, a) => a.indexOf(v) === i)
-          .join(' · ');
+      function renderProgress() {
+        const items = stockItemsForActiveGroup();
 
-        return '<article class="stock-item">' +
-          '<div class="stock-top"><div style="min-width:0"><div class="stock-code">' + escapeHtml(item.codigo) + '</div>' +
-          '<div class="stock-desc">' + escapeHtml(item.descripcion || 'Sin descripción') + '</div></div>' +
-          '<span class="status-tag status-' + status.key + '">' + status.label + '</span></div>' +
-          (groupText ? '<div class="stock-group">' + escapeHtml(groupText) + '</div>' : '') +
-          '<div class="stock-values"><div><span>En sistema (total)</span><strong>' + (values.system === null ? 'Sin dato' : formatNumber(values.system)) + '</strong></div>' +
-          '<div><span>Ya contado</span><strong>' + formatNumber(values.counted) + '</strong></div></div>' +
-          (values.outsideTracked !== null && values.outsideTracked > 0.000001
-            ? '<div class="stock-footnote">' + formatNumber(values.outsideTracked) + ' unidad(es) del total están en segmentos que no se cuentan en 0120 / 0056 real / EX (por ejemplo, EC o SC). Se incluyen en el total global, pero no se generan movimientos para esos segmentos.</div>'
-            : '') +
-          '</article>';
-      }).join('');
+        if (!items.length) {
+          $("progressCodes").textContent = "0 / 0";
+          $("progressUnits").textContent = "0 / 0";
+          $("progressPercent").textContent = "0%";
+          $("progressBar").style.width = "0%";
+          $("progressNote").textContent =
+            "Todavía no hay artículos importados para este grupo. Importá StockDisponible desde el menú de la planilla.";
+          return;
+        }
 
-      if (filtered.length > maxVisible) {
-        list.innerHTML += '<div class="stock-footnote">Mostrando ' + maxVisible + ' de ' + filtered.length + ' artículos. Usá el buscador para encontrar los demás.</div>';
-      } else {
-        list.innerHTML += '<div class="stock-footnote">' + filtered.length + ' artículo(s) en esta vista.</div>';
+        const totals = items.reduce(
+          (acc, item) => {
+            const values = stockNumbers(item);
+            if (values.system !== null) acc.system += values.system;
+            acc.counted += values.counted;
+            if (values.counted > 0.000001) acc.codes++;
+            return acc;
+          },
+          { system: 0, counted: 0, codes: 0 },
+        );
+
+        const percent = Math.min(100, (totals.codes / items.length) * 100);
+        $("progressCodes").textContent =
+          formatNumber(totals.codes) + " / " + formatNumber(items.length);
+        $("progressUnits").textContent =
+          formatNumber(totals.counted) + " / " + formatNumber(totals.system);
+        $("progressPercent").textContent = formatNumber(percent) + "%";
+        $("progressBar").style.width = percent + "%";
+        $("progressNote").textContent =
+          (state.activeGroup
+            ? "Grupo: " + state.activeGroup + ". "
+            : "Todos los grupos. ") +
+          "El avance suma 0120 + 0056 + EX. La ubicación seleccionada (" +
+          locationLabel($("locationSelect").value) +
+          ") solo indica dónde se guardarán los próximos escaneos.";
       }
-    }
 
-    function renderItems() {
-      const list = $('itemList');
-      const totalUnits = state.rows.reduce((sum, item) => sum + (Number(item.cantidad) || 0), 0);
-      $('statRecords').textContent = formatNumber(state.rows.length);
-      $('statUnits').textContent = formatNumber(totalUnits);
-      $('itemCount').textContent = state.rows.length + (state.rows.length === 1 ? ' registro' : ' registros');
+      function renderStockList() {
+        const list = $("stockList");
+        const query = normalizeText($("stockSearch").value || "");
+        const all = stockItemsForActiveGroup();
 
-      if (!state.rows.length) {
-        list.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><strong>Todavía no hay artículos</strong><p>Escaneá el primer producto para comenzar el conteo.</p></div>';
-        return;
+        const filtered = all.filter((item) => {
+          const status = stockStatus(item);
+          const text = [
+            item.codigo,
+            item.descripcion,
+            item.grupo,
+            item.familia,
+            item.categoria,
+            item.subfamilia,
+          ].join(" ");
+          if (query && !normalizeText(text).includes(query)) return false;
+          if (state.stockFilter === "pending" && status.key !== "pending")
+            return false;
+          if (
+            state.stockFilter === "difference" &&
+            !["partial", "surplus"].includes(status.key)
+          )
+            return false;
+          if (state.stockFilter === "ok" && status.key !== "ok") return false;
+          return true;
+        });
+
+        Array.from($("stockFilters").querySelectorAll("[data-filter]")).forEach(
+          (button) => {
+            button.classList.toggle(
+              "active",
+              button.dataset.filter === state.stockFilter,
+            );
+          },
+        );
+
+        if (!all.length) {
+          list.innerHTML =
+            '<div class="empty"><div class="empty-icon">📦</div><strong>No hay artículos para mostrar</strong><p>Importá uno o varios archivos StockDisponible desde el menú de la planilla.</p></div>';
+          return;
+        }
+        if (!filtered.length) {
+          list.innerHTML =
+            '<div class="empty"><div class="empty-icon">🔎</div><strong>No hay coincidencias</strong><p>Probá otro texto o elegí el filtro “Todos”.</p></div>';
+          return;
+        }
+
+        const maxVisible = 120;
+        list.innerHTML = filtered
+          .slice(0, maxVisible)
+          .map((item) => {
+            const values = stockNumbers(item);
+            const status = stockStatus(item);
+            const groupText = [
+              item.grupo,
+              item.subfamilia,
+              item.familia,
+              item.categoria,
+            ]
+              .filter(Boolean)
+              .filter((v, i, a) => a.indexOf(v) === i)
+              .join(" · ");
+
+            return (
+              '<article class="stock-item">' +
+              '<div class="stock-top"><div style="min-width:0"><div class="stock-code">' +
+              escapeHtml(item.codigo) +
+              "</div>" +
+              '<div class="stock-desc">' +
+              escapeHtml(item.descripcion || "Sin descripción") +
+              "</div></div>" +
+              '<span class="status-tag status-' +
+              status.key +
+              '">' +
+              status.label +
+              "</span></div>" +
+              (groupText
+                ? '<div class="stock-group">' + escapeHtml(groupText) + "</div>"
+                : "") +
+              '<div class="stock-values"><div><span>En sistema (total)</span><strong>' +
+              (values.system === null
+                ? "Sin dato"
+                : formatNumber(values.system)) +
+              "</strong></div>" +
+              "<div><span>Ya contado</span><strong>" +
+              formatNumber(values.counted) +
+              "</strong></div></div>" +
+              (values.outsideTracked !== null &&
+              values.outsideTracked > 0.000001
+                ? '<div class="stock-footnote">' +
+                  formatNumber(values.outsideTracked) +
+                  " unidad(es) del total están en segmentos que no se cuentan en 0120 / 0056 real / EX (por ejemplo, EC o SC). Se incluyen en el total global, pero no se generan movimientos para esos segmentos.</div>"
+                : "") +
+              "</article>"
+            );
+          })
+          .join("");
+
+        if (filtered.length > maxVisible) {
+          list.innerHTML +=
+            '<div class="stock-footnote">Mostrando ' +
+            maxVisible +
+            " de " +
+            filtered.length +
+            " artículos. Usá el buscador para encontrar los demás.</div>";
+        } else {
+          list.innerHTML +=
+            '<div class="stock-footnote">' +
+            filtered.length +
+            " artículo(s) en esta vista.</div>";
+        }
       }
 
-      list.innerHTML = state.rows.map(item => {
-        const pending = item.status !== 'sent' || state.queue.some(op => op.id === item.id);
-        const editorOpen = state.activeEditor === item.id;
+      function renderItems() {
+        const list = $("itemList");
+        const totalUnits = state.rows.reduce(
+          (sum, item) => sum + (Number(item.cantidad) || 0),
+          0,
+        );
+        $("statRecords").textContent = formatNumber(state.rows.length);
+        $("statUnits").textContent = formatNumber(totalUnits);
+        $("itemCount").textContent =
+          state.rows.length +
+          (state.rows.length === 1 ? " registro" : " registros");
 
-        return `
+        if (!state.rows.length) {
+          list.innerHTML =
+            '<div class="empty"><div class="empty-icon">📋</div><strong>Todavía no hay artículos</strong><p>Escaneá el primer producto para comenzar el conteo.</p></div>';
+          return;
+        }
+
+        list.innerHTML = state.rows
+          .map((item) => {
+            const pending =
+              item.status !== "sent" ||
+              state.queue.some((op) => op.id === item.id);
+            const editorOpen = state.activeEditor === item.id;
+
+            return `
           <article class="item" data-id="${escapeHtml(item.id)}">
             <div class="item-top">
               <div style="min-width:0;">
                 <div class="item-code">${escapeHtml(item.codigo)}</div>
-                <div class="item-desc">${escapeHtml(item.descripcion || 'Descripción no encontrada en el catálogo')}</div>
+                <div class="item-desc">${escapeHtml(item.descripcion || "Descripción no encontrada en el catálogo")}</div>
               </div>
               <strong style="font-size:18px; white-space:nowrap;">× ${escapeHtml(formatNumber(item.cantidad))}</strong>
             </div>
             <div class="item-meta">
               <span class="tag">${escapeHtml(locationLabel(item.deposito))}</span>
-              ${item.grupo ? `<span class="tag">${escapeHtml(item.grupo)}</span>` : ''}
-              <span class="tag ${pending ? 'pending' : 'sent'}">${pending ? '◷ Pendiente de envío' : '✓ Enviado'}</span>
+              ${item.grupo ? `<span class="tag">${escapeHtml(item.grupo)}</span>` : ""}
+              <span class="tag ${pending ? "pending" : "sent"}">${pending ? "◷ Pendiente de envío" : "✓ Enviado"}</span>
             </div>
             <div class="item-actions">
               <button class="btn btn-secondary btn-small" type="button" data-action="edit" data-id="${escapeHtml(item.id)}">✎ Editar</button>
               <button class="btn btn-danger btn-small" type="button" data-action="delete" data-id="${escapeHtml(item.id)}">⌫ Eliminar</button>
             </div>
-            <div class="editor ${editorOpen ? 'open' : ''}" id="editor-${escapeHtml(item.id)}">
+            <div class="editor ${editorOpen ? "open" : ""}" id="editor-${escapeHtml(item.id)}">
               <div class="editor-grid">
                 <div><label for="edit-code-${escapeHtml(item.id)}">Código</label><input class="field" id="edit-code-${escapeHtml(item.id)}" value="${escapeHtml(item.codigo)}" autocomplete="off" autocapitalize="characters"></div>
                 <div><label for="edit-qty-${escapeHtml(item.id)}">Cantidad</label><input class="field" id="edit-qty-${escapeHtml(item.id)}" type="number" min="0.01" step="any" value="${escapeHtml(item.cantidad)}"></div>
@@ -1259,306 +2239,335 @@
               </div>
             </div>
           </article>`;
-      }).join('');
-    }
-
-    function renderQueueState() {
-      const pendingCount = state.queue.length;
-      $('queueToolbar').style.display = pendingCount ? 'flex' : 'none';
-      $('retryButton').disabled = state.sending || !navigator.onLine || !auth.currentUser;
-
-      if (!pendingCount) {
-        hideMessage('queueMessage');
-        return;
+          })
+          .join("");
       }
 
-      const detail = state.lastError
-        ? ' Último error: ' + state.lastError
-        : (navigator.onLine ? ' Se enviarán en orden cuando haya conexión.' : ' Se enviarán cuando vuelva la conexión.');
+      function renderQueueState() {
+        const pendingCount = state.queue.length;
+        $("queueToolbar").style.display = pendingCount ? "flex" : "none";
+        $("retryButton").disabled =
+          state.sending || !navigator.onLine || !auth.currentUser;
 
-      showMessage(
-        'queueMessage',
-        pendingCount + (pendingCount === 1 ? ' operación pendiente.' : ' operaciones pendientes.') + detail,
-        'warning'
-      );
-    }
-
-    function locationLabel(value) {
-      return value === '0120'
-        ? '0120 · Depósito'
-        : value === '0056'
-          ? '0056 · Depósito real'
-          : 'EX · Exhibición';
-    }
-
-    function escapeHtml(value) {
-      return String(value ?? '').replace(/[&<>"']/g, char => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-      }[char]));
-    }
-
-    function focusCodeInput() {
-      if ($('appContent').hidden) return;
-      window.setTimeout(() => {
-        $('codeInput').focus({ preventScroll: true });
-        $('codeInput').select();
-      }, 70);
-    }
-
-    async function startGoogleSignIn() {
-  const button = $('googleLoginButton');
-
-  try {
-    button.disabled = true;
-    $('authMessage').textContent = 'Conectando con Google...';
-
-    const provider = new GoogleAuthProvider();
-
-    provider.setCustomParameters({
-      prompt: 'select_account'
-    });
-
-    const result = await signInWithPopup(auth, provider);
-
-    console.log(
-      'Inicio de sesión correcto:',
-      result.user.email,
-      result.user.uid
-    );
-
-  } catch (error) {
-    console.error('Error de inicio de sesión:', error);
-
-    $('authMessage').textContent =
-      'No se pudo iniciar sesión: ' +
-      (error.code || '') + ' ' +
-      (error.message || 'Error desconocido.');
-
-    button.disabled = false;
-  }
-}
-
-    async function closeGoogleSession() {
-      try {
-        // La cola queda guardada bajo el UID de esta cuenta. Cerrar sesión
-        // no la borra ni la mezcla con la próxima cuenta que ingrese.
-        persist();
-        if (state.queue.length) {
-          $('authMessage').textContent = 'Cerrando sesión. Las operaciones pendientes quedarán guardadas para esta cuenta.';
+        if (!pendingCount) {
+          hideMessage("queueMessage");
+          return;
         }
-        await signOut(auth);
-      } catch (error) {
-        $('authMessage').textContent = 'No se pudo cerrar la sesión: ' + (error.message || 'Error desconocido.');
-      }
-    }
 
-    async function handleAuthState(user) {
-      const runId = ++authStateRun;
-      const newUid = user ? user.uid : '';
+        const detail = state.lastError
+          ? " Último error: " + state.lastError
+          : navigator.onLine
+            ? " Se enviarán en orden cuando haya conexión."
+            : " Se enviarán cuando vuelva la conexión.";
 
-      // Nunca mantener en memoria datos de otra cuenta si se cambia de usuario.
-      if (newUid !== lastAuthUid) {
-        clearSessionMemory();
-      }
-      lastAuthUid = newUid;
-
-      if (!user) {
-        STORAGE_KEY = '';
-        $('appContent').hidden = true;
-        $('authSignedOut').hidden = false;
-        $('authSignedIn').hidden = true;
-        $('googleLoginButton').disabled = false;
-        $('authMessage').textContent = 'Iniciá sesión con una cuenta Google autorizada.';
-        render();
-        setConnection();
-        return;
+        showMessage(
+          "queueMessage",
+          pendingCount +
+            (pendingCount === 1
+              ? " operación pendiente."
+              : " operaciones pendientes.") +
+            detail,
+          "warning",
+        );
       }
 
-      STORAGE_KEY = STORAGE_KEY_BASE + user.uid;
-      restore();
+      function locationLabel(value) {
+        return value === "0120"
+          ? "0120 · Depósito"
+          : value === "0056"
+            ? "0056 · Depósito real"
+            : "EX · Exhibición";
+      }
 
-      $('authSignedOut').hidden = true;
-      $('authSignedIn').hidden = false;
-      $('authIdentity').textContent = user.email || 'Cuenta Google';
-      $('authMessage').textContent = 'Validando permisos de C-Stock...';
-      $('appContent').hidden = true;
-      setConnection();
-      render();
+      function escapeHtml(value) {
+        return String(value ?? "").replace(
+          /[&<>"']/g,
+          (char) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[char],
+        );
+      }
 
-      if (navigator.onLine) {
-        const authorized = await initializeCatalog(true);
-        if (runId !== authStateRun) return;
+      function focusCodeInput() {
+        if ($("appContent").hidden) return;
+        window.setTimeout(() => {
+          $("codeInput").focus({ preventScroll: true });
+          $("codeInput").select();
+        }, 70);
+      }
 
-        if (!authorized) {
-          $('appContent').hidden = true;
-          $('authMessage').textContent = 'No se pudo validar el acceso a C-Stock. ' +
-            (state.lastError || 'Comprobá tu conexión o consultá al administrador.');
+      async function startGoogleSignIn() {
+        const button = $("googleLoginButton");
+
+        try {
+          button.disabled = true;
+          $("authMessage").textContent = "Conectando con Google...";
+
+          const provider = new GoogleAuthProvider();
+
+          provider.setCustomParameters({
+            prompt: "select_account",
+          });
+
+          const result = await signInWithPopup(auth, provider);
+
+          console.log(
+            "Inicio de sesión correcto:",
+            result.user.email,
+            result.user.uid,
+          );
+        } catch (error) {
+          console.error("Error de inicio de sesión:", error);
+
+          $("authMessage").textContent =
+            "No se pudo iniciar sesión: " +
+            (error.code || "") +
+            " " +
+            (error.message || "Error desconocido.");
+
+          button.disabled = false;
+        }
+      }
+
+      async function closeGoogleSession() {
+        try {
+          // La cola queda guardada bajo el UID de esta cuenta. Cerrar sesión
+          // no la borra ni la mezcla con la próxima cuenta que ingrese.
+          persist();
+          if (state.queue.length) {
+            $("authMessage").textContent =
+              "Cerrando sesión. Las operaciones pendientes quedarán guardadas para esta cuenta.";
+          }
+          await signOut(auth);
+        } catch (error) {
+          $("authMessage").textContent =
+            "No se pudo cerrar la sesión: " +
+            (error.message || "Error desconocido.");
+        }
+      }
+
+      async function handleAuthState(user) {
+        const runId = ++authStateRun;
+        const newUid = user ? user.uid : "";
+
+        // Nunca mantener en memoria datos de otra cuenta si se cambia de usuario.
+        if (newUid !== lastAuthUid) {
+          clearSessionMemory();
+        }
+        lastAuthUid = newUid;
+
+        if (!user) {
+          STORAGE_KEY = "";
+          $("appContent").hidden = true;
+          $("authSignedOut").hidden = false;
+          $("authSignedIn").hidden = true;
+          $("googleLoginButton").disabled = false;
+          $("authMessage").textContent =
+            "Iniciá sesión con una cuenta Google autorizada.";
+          render();
           setConnection();
           return;
         }
 
-        $('appContent').hidden = false;
-        $('authMessage').textContent = 'Acceso validado correctamente.';
+        STORAGE_KEY = STORAGE_KEY_BASE + user.uid;
+        restore();
+
+        $("authSignedOut").hidden = true;
+        $("authSignedIn").hidden = false;
+        $("authIdentity").textContent = user.email || "Cuenta Google";
+        $("authMessage").textContent = "Validando permisos de C-Stock...";
+        $("appContent").hidden = true;
+        setConnection();
         render();
-        focusCodeInput();
 
-        if (state.queue.length) retryQueue();
+        if (navigator.onLine) {
+          const authorized = await initializeCatalog(true);
+          if (runId !== authStateRun) return;
 
-      } else {
-        // La cola queda local y el servidor validará el token cuando vuelva la conexión.
-        if (state.catalog.length || state.rows.length || state.queue.length) {
-          $('appContent').hidden = false;
-          $('authMessage').textContent = 'Sesión local recuperada. Sin conexión: las operaciones quedarán pendientes.';
+          if (!authorized) {
+            $("appContent").hidden = true;
+            $("authMessage").textContent =
+              "No se pudo validar el acceso a C-Stock. " +
+              (state.lastError ||
+                "Comprobá tu conexión o consultá al administrador.");
+            setConnection();
+            return;
+          }
+
+          $("appContent").hidden = false;
+          $("authMessage").textContent = "Acceso validado correctamente.";
           render();
           focusCodeInput();
+
+          if (state.queue.length) retryQueue();
         } else {
-          $('appContent').hidden = true;
-          $('authMessage').textContent = 'Iniciaste sesión, pero necesitás conexión para validar tu usuario y cargar el catálogo.';
+          // La cola queda local y el servidor validará el token cuando vuelva la conexión.
+          if (state.catalog.length || state.rows.length || state.queue.length) {
+            $("appContent").hidden = false;
+            $("authMessage").textContent =
+              "Sesión local recuperada. Sin conexión: las operaciones quedarán pendientes.";
+            render();
+            focusCodeInput();
+          } else {
+            $("appContent").hidden = true;
+            $("authMessage").textContent =
+              "Iniciaste sesión, pero necesitás conexión para validar tu usuario y cargar el catálogo.";
+          }
         }
+
+        setConnection();
       }
 
-      setConnection();
-    }
+      // Eventos de entrada y escaneo.
+      $("codeInput").addEventListener("input", (event) => {
+        const input = event.target;
+        const start = input.selectionStart;
+        const before = input.value;
+        const upper = before.toUpperCase();
 
-    // Eventos de entrada y escaneo.
-    $('codeInput').addEventListener('input', event => {
-      const input = event.target;
-      const start = input.selectionStart;
-      const before = input.value;
-      const upper = before.toUpperCase();
+        if (before !== upper) {
+          input.value = upper;
+          try {
+            input.setSelectionRange(start, start);
+          } catch (_) {}
+        }
 
-      if (before !== upper) {
-        input.value = upper;
-        try { input.setSelectionRange(start, start); } catch (_) {}
-      }
+        state.selectedSuggestion = null;
+        renderSuggestions();
+      });
 
-      state.selectedSuggestion = null;
-      renderSuggestions();
-    });
+      $("codeInput").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          const firstSuggestion = $("suggestions").querySelector(".suggestion");
+          if (!$("suggestions").hidden && firstSuggestion) {
+            firstSuggestion.click();
+            addItem();
+          } else {
+            addItem();
+          }
+        } else if (event.key === "Escape") {
+          $("suggestions").hidden = true;
+        }
+      });
 
-    $('codeInput').addEventListener('keydown', event => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        const firstSuggestion = $('suggestions').querySelector('.suggestion');
-        if (!$('suggestions').hidden && firstSuggestion) {
-          firstSuggestion.click();
-          addItem();
-        } else {
+      $("qtyInput").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
           addItem();
         }
-      } else if (event.key === 'Escape') {
-        $('suggestions').hidden = true;
-      }
-    });
+      });
 
-    $('qtyInput').addEventListener('keydown', event => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        addItem();
-      }
-    });
+      $("addButton").addEventListener("click", addItem);
+      $("retryButton").addEventListener("click", retryQueue);
 
-    $('addButton').addEventListener('click', addItem);
-    $('retryButton').addEventListener('click', retryQueue);
-
-    $('locationSelect').addEventListener('change', () => {
-      render();
-      focusCodeInput();
-    });
-
-    $('groupSelect').addEventListener('change', () => {
-      state.activeGroup = $('groupSelect').value;
-      persist();
-      render();
-      focusCodeInput();
-    });
-
-    $('stockSearch').addEventListener('input', renderStockList);
-
-    $('stockFilters').addEventListener('click', event => {
-      const button = event.target.closest('button[data-filter]');
-      if (!button) return;
-      state.stockFilter = button.dataset.filter;
-      renderStockList();
-    });
-
-    $('refreshButton').addEventListener('click', async () => {
-      if (state.queue.length || state.sending) {
-        showMessage('mainMessage', 'Hay cambios pendientes de envío. Primero tocá “Reintentar envío”; después actualizá el estado del stock.', 'warning');
-        return;
-      }
-
-      $('refreshButton').disabled = true;
-      $('refreshButton').textContent = 'Actualizando...';
-      const updated = await initializeCatalog(true);
-      $('refreshButton').disabled = false;
-      $('refreshButton').textContent = '↻ Actualizar';
-
-      if (updated) {
-        showMessage('mainMessage', 'Lista de stock actualizada.', 'success');
-      } else {
-        showMessage('mainMessage', 'No se pudo actualizar la lista. Se conserva la última copia disponible.', 'warning');
-      }
-    });
-
-    $('sheetButton').addEventListener('click', () => {
-      if (state.sheetUrl) window.open(state.sheetUrl, '_blank', 'noopener,noreferrer');
-    });
-
-    $('itemList').addEventListener('click', event => {
-      const button = event.target.closest('button[data-action]');
-      if (!button) return;
-
-      const id = button.dataset.id;
-      const action = button.dataset.action;
-
-      if (action === 'edit') {
-        state.activeEditor = state.activeEditor === id ? null : id;
-        renderItems();
-        const input = $('edit-code-' + id);
-        if (input) input.focus({ preventScroll: true });
-
-      } else if (action === 'cancel') {
-        state.activeEditor = null;
-        renderItems();
+      $("locationSelect").addEventListener("change", () => {
+        render();
         focusCodeInput();
+      });
 
-      } else if (action === 'save') {
-        updateItem(id, $('edit-code-' + id).value, $('edit-qty-' + id).value);
+      $("groupSelect").addEventListener("change", () => {
+        state.activeGroup = $("groupSelect").value;
+        persist();
+        render();
         focusCodeInput();
+      });
 
-      } else if (action === 'delete') {
-        if (window.confirm('¿Eliminar este registro del conteo?')) deleteItem(id);
-        focusCodeInput();
-      }
-    });
+      $("stockSearch").addEventListener("input", renderStockList);
 
-    $('googleLoginButton').addEventListener('click', startGoogleSignIn);
-    $('signOutButton').addEventListener('click', closeGoogleSession);
+      $("stockFilters").addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-filter]");
+        if (!button) return;
+        state.stockFilter = button.dataset.filter;
+        renderStockList();
+      });
 
-    window.addEventListener('online', async () => {
-      setConnection();
-      if (!auth.currentUser) return;
-      if (state.queue.length) {
-        retryQueue();
-      } else {
+      $("refreshButton").addEventListener("click", async () => {
+        if (state.queue.length || state.sending) {
+          showMessage(
+            "mainMessage",
+            "Hay cambios pendientes de envío. Primero tocá “Reintentar envío”; después actualizá el estado del stock.",
+            "warning",
+          );
+          return;
+        }
+
+        $("refreshButton").disabled = true;
+        $("refreshButton").textContent = "Actualizando...";
         const updated = await initializeCatalog(true);
+        $("refreshButton").disabled = false;
+        $("refreshButton").textContent = "↻ Actualizar";
+
         if (updated) {
-          $('authMessage').textContent = 'Conexión recuperada y catálogo actualizado.';
-          render();
+          showMessage("mainMessage", "Lista de stock actualizada.", "success");
+        } else {
+          showMessage(
+            "mainMessage",
+            "No se pudo actualizar la lista. Se conserva la última copia disponible.",
+            "warning",
+          );
         }
-      }
-    });
+      });
 
-    window.addEventListener('offline', setConnection);
+      $("sheetButton").addEventListener("click", () => {
+        if (state.sheetUrl)
+          window.open(state.sheetUrl, "_blank", "noopener,noreferrer");
+      });
 
-    setConnection();
+      $("itemList").addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
 
-    onAuthStateChanged(auth, handleAuthState);
-  </script>
-</body>
+        const id = button.dataset.id;
+        const action = button.dataset.action;
+
+        if (action === "edit") {
+          state.activeEditor = state.activeEditor === id ? null : id;
+          renderItems();
+          const input = $("edit-code-" + id);
+          if (input) input.focus({ preventScroll: true });
+        } else if (action === "cancel") {
+          state.activeEditor = null;
+          renderItems();
+          focusCodeInput();
+        } else if (action === "save") {
+          updateItem(id, $("edit-code-" + id).value, $("edit-qty-" + id).value);
+          focusCodeInput();
+        } else if (action === "delete") {
+          if (window.confirm("¿Eliminar este registro del conteo?"))
+            deleteItem(id);
+          focusCodeInput();
+        }
+      });
+
+      $("googleLoginButton").addEventListener("click", startGoogleSignIn);
+      $("signOutButton").addEventListener("click", closeGoogleSession);
+
+      window.addEventListener("online", async () => {
+        setConnection();
+        if (!auth.currentUser) return;
+        if (state.queue.length) {
+          retryQueue();
+        } else {
+          const updated = await initializeCatalog(true);
+          if (updated) {
+            $("authMessage").textContent =
+              "Conexión recuperada y catálogo actualizado.";
+            render();
+          }
+        }
+      });
+
+      window.addEventListener("offline", setConnection);
+
+      setConnection();
+
+      onAuthStateChanged(auth, handleAuthState);
+    </script>
+  </body>
 </html>
