@@ -223,7 +223,7 @@
         <div class="stat"><span>Unidades contado / sistema</span><strong id="progressUnits">0 / 0</strong></div>
       </div>
       <div class="progress-track" aria-label="Progreso de códigos"><div class="progress-fill" id="progressBar"></div></div>
-      <p class="progress-note" id="progressNote">El avance se calcula según el grupo y la ubicación elegidos.</p>
+      <p class="progress-note" id="progressNote">El avance y los estados usan el total de las tres ubicaciones. El selector solo define dónde se guardan los próximos escaneos.</p>
     </section>
 
     <section class="card" aria-labelledby="scanTitle">
@@ -273,7 +273,7 @@
         <button class="filter-btn" type="button" data-filter="ok">OK</button>
       </div>
       <div class="stock-list" id="stockList"></div>
-      <p class="stock-footnote">“Parcial” significa que todavía se contó menos que el stock del sistema. “Sobrante” significa que se contó más. Actualizá la lista para traer cambios hechos desde otros celulares.</p>
+      <p class="stock-footnote">“Parcial” significa que todavía se contó menos que el stock total del sistema. “Sobrante” significa que se contó más. Los números siempre suman 0120, 0056 y EX. Actualizá la lista para traer cambios hechos desde otros celulares.</p>
     </section>
 
     <section class="card">
@@ -301,6 +301,7 @@
       sheetUrl: '',
       rows: [],
       queue: [],
+      sessionTombstones: [],
       sending: false,
       activeEditor: null,
       selectedSuggestion: null,
@@ -328,6 +329,7 @@
           activeGroup: state.activeGroup,
           rows: state.rows,
           queue: state.queue,
+          sessionTombstones: state.sessionTombstones,
           catalog: state.catalog
         }));
       } catch (error) {
@@ -343,8 +345,10 @@
         state.activeGroup = saved.activeGroup || '';
         state.rows = Array.isArray(saved.rows) ? saved.rows : [];
         state.queue = Array.isArray(saved.queue) ? saved.queue : [];
+        state.sessionTombstones = Array.isArray(saved.sessionTombstones) ? saved.sessionTombstones : [];
         state.catalog = Array.isArray(saved.catalog) ? saved.catalog : [];
         rebuildCatalog();
+        state.rows.forEach(ensureRowSnapshot);
       } catch (error) {
         console.warn('No se pudo recuperar la sesión local:', error);
       }
@@ -354,6 +358,20 @@
       state.catalog.forEach(item => {
         const code = shortCode(item.codigo || item.code || '');
         if (!code) return;
+        const sis120 = Number(item.sis_120) || 0;
+        const sis56 = Number(item.sis_56) || 0;
+        const sisEx = Number(item.sis_ex) || 0;
+        const cont120 = Number(item.cont_120) || 0;
+        const cont56 = Number(item.cont_56) || 0;
+        const contEx = Number(item.cont_ex) || 0;
+        // El total global debe venir de StockDisponible (columna "Stock total").
+        // No reconstruirlo sumando SIS_120 + SIS_56 + SIS_EX: esos campos omiten
+        // segmentos como EC/SC que sí forman parte del stock global.
+        const rawSystemTotal = firstNumericValue(item, [
+          'sis_total', 'stock_total', 'stockTotal', 'total_sistema', 'totalSistema', 'stock total'
+        ]);
+        const hasSisTotal = rawSystemTotal !== null;
+        const hasContTotal = item.cont_total !== undefined && item.cont_total !== null && item.cont_total !== '';
         const entry = {
           ...item,
           codigo: code,
@@ -363,14 +381,14 @@
           categoria: String(item.categoria || '').trim(),
           subfamilia: String(item.subfamilia || '').trim(),
           grupo: String(item.grupo || 'Stock importado').trim(),
-          sis_120: Number(item.sis_120) || 0,
-          sis_56: Number(item.sis_56) || 0,
-          sis_ex: Number(item.sis_ex) || 0,
-          sis_total: Number(item.sis_total) || 0,
-          cont_120: Number(item.cont_120) || 0,
-          cont_56: Number(item.cont_56) || 0,
-          cont_ex: Number(item.cont_ex) || 0,
-          cont_total: Number(item.cont_total) || 0
+          sis_120: sis120,
+          sis_56: sis56,
+          sis_ex: sisEx,
+          sis_total: hasSisTotal ? rawSystemTotal : null,
+          cont_120: cont120,
+          cont_56: cont56,
+          cont_ex: contEx,
+          cont_total: hasContTotal ? (Number(item.cont_total) || 0) : cont120 + cont56 + contEx
         };
         if (!state.catalogByCode.has(code)) state.catalogByCode.set(code, entry);
       });
@@ -379,6 +397,16 @@
       ))).sort((a, b) => a.localeCompare(b, 'es'));
       if (state.activeGroup && !state.groups.includes(state.activeGroup)) state.activeGroup = '';
       if (!state.activeGroup && state.groups.length === 1) state.activeGroup = state.groups[0];
+    }
+    function firstNumericValue(object, keys) {
+      for (const key of keys) {
+        if (!Object.prototype.hasOwnProperty.call(object, key)) continue;
+        const value = object[key];
+        if (value === null || value === undefined || String(value).trim() === '') continue;
+        const parsed = typeof value === 'number' ? value : Number(String(value).replace(',', '.'));
+        if (Number.isFinite(parsed)) return parsed;
+      }
+      return null;
     }
     function showMessage(id, text, type = 'info') {
       const el = $(id);
@@ -424,6 +452,7 @@
         state.catalog = Array.isArray(data.items) ? data.items : [];
         state.sheetUrl = data.sheetUrl || state.sheetUrl;
         rebuildCatalog();
+        reconcileSessionWithCatalog();
         persist();
         $('sheetButton').disabled = !state.sheetUrl;
         if (!state.catalog.length && !quiet) {
@@ -555,7 +584,13 @@
         deposito: location,
         createdAt: new Date().toISOString(),
         status: 'pending',
-        remote: null
+        remote: null,
+        // Base del último catálogo recibido. Cero indica que este alta todavía
+        // no está incluida en la foto del servidor.
+        snapshotCode: '',
+        snapshotUnits: 0,
+        serverCode: '',
+        serverUnits: 0
       };
       state.rows.unshift(item);
       state.queue.push({
@@ -676,12 +711,32 @@
             if (item) {
               item.remote = remote;
               item.status = 'sent';
+              item.serverCode = shortCode(op.payload.codigo);
+              item.serverUnits = countedUnitsForValues(op.payload.codigo, op.payload.cantidad, op.payload.deposito);
+            } else {
+              const tombstone = state.sessionTombstones.find(entry => entry.id === op.id);
+              if (tombstone) {
+                tombstone.serverCode = shortCode(op.payload.codigo);
+                tombstone.serverUnits = countedUnitsForValues(op.payload.codigo, op.payload.cantidad, op.payload.deposito);
+              }
             }
             // Propaga la ubicación remota a las operaciones posteriores del mismo registro,
             // incluso cuando el usuario lo haya eliminado mientras el alta estaba en curso.
             state.queue.slice(1).filter(next => next.id === op.id).forEach(next => { next.remote = remote; });
           } else if (op.action === 'update') {
-            if (item) item.status = 'sent';
+            const tombstone = state.sessionTombstones.find(entry => entry.id === op.id);
+            const depositoConfirmado = op.deposito || (item && item.deposito) || (tombstone && tombstone.deposito) || '0120';
+            const confirmedCode = shortCode(op.codigo);
+            const confirmedUnits = countedUnitsForValues(op.codigo, op.cantidad, depositoConfirmado);
+            if (item) {
+              item.status = 'sent';
+              item.serverCode = confirmedCode;
+              item.serverUnits = confirmedUnits;
+            } else if (tombstone) {
+              tombstone.serverCode = confirmedCode;
+              tombstone.serverUnits = confirmedUnits;
+              tombstone.deposito = depositoConfirmado;
+            }
           }
           state.queue.shift();
           persist();
@@ -717,6 +772,7 @@
         showMessage('mainMessage', 'Ingresá una cantidad mayor que cero.', 'error');
         return;
       }
+      ensureRowSnapshot(item);
       item.codigo = code;
       item.descripcion = getDescription(code);
       item.grupo = (getCatalogItem(code) || {}).grupo || '';
@@ -733,9 +789,25 @@
       const index = state.rows.findIndex(row => row.id === id);
       if (index < 0) return;
       const item = state.rows[index];
+      ensureRowSnapshot(item);
       const hasQueuedAdd = state.queue.some(op => op.id === id && op.action === 'add');
       if (item.remote || hasQueuedAdd) {
         state.queue.push({ id, action: 'delete', remote: item.remote || null });
+      }
+      const tombstoneCode = item.snapshotCode || item.serverCode || '';
+      const tombstoneUnits = Number(item.snapshotUnits) > 0.000001
+        ? Number(item.snapshotUnits)
+        : (Number(item.serverUnits) || 0);
+      if (tombstoneCode && tombstoneUnits > 0.000001) {
+        state.sessionTombstones.push({
+          id: item.id,
+          codigo: shortCode(tombstoneCode),
+          units: tombstoneUnits,
+          serverCode: item.serverCode || '',
+          serverUnits: Number(item.serverUnits) || 0,
+          deposito: item.deposito || '0120',
+          grupo: item.grupo || ''
+        });
       }
       state.rows.splice(index, 1);
       if (state.activeEditor === id) state.activeEditor = null;
@@ -778,11 +850,103 @@
       return state.catalog.filter(item => groupMatches(item));
     }
 
+    // Convierte lo cargado en la app a unidades reales, igual que las fórmulas
+    // de las hojas: en depósito se divide por el divisor; en EX son unidades directas.
+    function countedUnitsForValues(code, quantityValue, deposito) {
+      const quantity = Number(quantityValue) || 0;
+      if (deposito === 'EX') return quantity;
+      const catalogItem = state.catalogByCode.get(shortCode(code));
+      const divisor = Math.max(Number((catalogItem && catalogItem.divisor) || 1), 1);
+      return quantity / divisor;
+    }
+
+    function countedUnitsForRow(row) {
+      return countedUnitsForValues(row.codigo, row.cantidad, row.deposito);
+    }
+
+    // Asegura compatibilidad con registros guardados por versiones anteriores de la app.
+    function ensureRowSnapshot(row) {
+      if (Object.prototype.hasOwnProperty.call(row, 'snapshotCode') &&
+          Object.prototype.hasOwnProperty.call(row, 'snapshotUnits')) return;
+      if (row.remote && row.serverCode && Number.isFinite(Number(row.serverUnits))) {
+        row.snapshotCode = shortCode(row.serverCode);
+        row.snapshotUnits = Number(row.serverUnits) || 0;
+      } else if (row.remote && row.status === 'sent') {
+        row.snapshotCode = shortCode(row.codigo);
+        row.snapshotUnits = countedUnitsForRow(row);
+      } else {
+        row.snapshotCode = '';
+        row.snapshotUnits = 0;
+      }
+    }
+
+    // Cuando llega una foto nueva de Google Sheets, las operaciones confirmadas
+    // pasan a formar parte de esa base. Las operaciones aún pendientes siguen
+    // representándose localmente, sin duplicar lo ya recibido del servidor.
+    function reconcileSessionWithCatalog() {
+      state.rows.forEach(row => {
+        ensureRowSnapshot(row);
+        if (row.remote && row.serverCode && Number.isFinite(Number(row.serverUnits))) {
+          row.snapshotCode = shortCode(row.serverCode);
+          row.snapshotUnits = Number(row.serverUnits) || 0;
+        } else {
+          const hasPendingOperation = state.queue.some(operation => operation.id === row.id);
+          if (row.remote && row.status === 'sent' && !hasPendingOperation) {
+            row.snapshotCode = shortCode(row.codigo);
+            row.snapshotUnits = countedUnitsForRow(row);
+          }
+        }
+      });
+      // Si un registro borrado había recibido cambios confirmados antes de
+      // completar su baja, la foto nueva de Sheets ya incluye esa última versión.
+      state.sessionTombstones.forEach(tombstone => {
+        if (tombstone.serverCode && Number.isFinite(Number(tombstone.serverUnits))) {
+          tombstone.codigo = shortCode(tombstone.serverCode);
+          tombstone.units = Number(tombstone.serverUnits) || 0;
+        }
+      });
+      if (!state.queue.length) state.sessionTombstones = [];
+    }
+
+    // Calcula el ajuste local contra la última foto de Sheets. Esto permite
+    // incluir altas/ediciones aún en cola y altas recién confirmadas, sin sumar
+    // dos veces los registros que ya vinieron en cont_total.
+    function localCountDeltaForCode(code) {
+      const target = shortCode(code);
+      let delta = 0;
+      state.rows.forEach(row => {
+        ensureRowSnapshot(row);
+        if (shortCode(row.codigo) === target) delta += countedUnitsForRow(row);
+        if (shortCode(row.snapshotCode) === target) delta -= Number(row.snapshotUnits) || 0;
+      });
+      state.sessionTombstones.forEach(tombstone => {
+        if (shortCode(tombstone.codigo) === target) delta -= Number(tombstone.units) || 0;
+      });
+      return delta;
+    }
+
+    // El avance y el estado siempre se calculan sobre el total de las ubicaciones.
+    // El selector de ubicación se usa exclusivamente para las próximas altas.
     function stockNumbers(item) {
-      const location = $('locationSelect').value;
-      if (location === '0120') return { system: Number(item.sis_120) || 0, counted: Number(item.cont_120) || 0 };
-      if (location === '0056') return { system: Number(item.sis_56) || 0, counted: Number(item.cont_56) || 0 };
-      return { system: Number(item.sis_ex) || 0, counted: Number(item.cont_ex) || 0 };
+      // sis_total es el total global oficial del StockDisponible (columna L).
+      // Solo se calcula desde los subtotales por ubicación cuando el servidor
+      // no envía ese campo, por compatibilidad con versiones antiguas del GS.
+      const hasSystemTotal = item.sis_total !== undefined &&
+        item.sis_total !== null && item.sis_total !== '' &&
+        Number.isFinite(Number(item.sis_total));
+      const hasCountedTotal = item.cont_total !== undefined &&
+        item.cont_total !== null && item.cont_total !== '' &&
+        Number.isFinite(Number(item.cont_total));
+      // Nunca reemplazar el total global por la suma de ubicaciones visibles:
+      // esa suma puede ser 5 aunque Stock total sea 6 por existencias EC/SC.
+      const system = hasSystemTotal ? Number(item.sis_total) : null;
+      const trackedSystem = Number(item.sis_120 || 0) + Number(item.sis_56 || 0) + Number(item.sis_ex || 0);
+      const outsideTracked = system === null ? null : Math.max(0, system - trackedSystem);
+      const serverCounted = hasCountedTotal
+        ? Number(item.cont_total)
+        : (Number(item.cont_120 || 0) + Number(item.cont_56 || 0) + Number(item.cont_ex || 0));
+      const counted = Math.max(0, serverCounted + localCountDeltaForCode(item.codigo));
+      return { system, counted, trackedSystem, outsideTracked };
     }
 
     function stockStatus(item) {
@@ -806,7 +970,7 @@
       }
       const totals = items.reduce((acc, item) => {
         const values = stockNumbers(item);
-        acc.system += values.system;
+        if (values.system !== null) acc.system += values.system;
         acc.counted += values.counted;
         if (values.counted > 0.000001) acc.codes++;
         return acc;
@@ -816,16 +980,9 @@
       $('progressUnits').textContent = formatNumber(totals.counted) + ' / ' + formatNumber(totals.system);
       $('progressPercent').textContent = formatNumber(percent) + '%';
       $('progressBar').style.width = percent + '%';
-      const totalGlobal = items.reduce((acc, item) => {
-        acc.system += Number(item.sis_total) || 0;
-        acc.counted += Number(item.cont_total) || 0;
-        if ((Number(item.cont_total) || 0) > 0.000001) acc.codes++;
-        return acc;
-      }, { system: 0, counted: 0, codes: 0 });
-      $('progressNote').textContent = 'Ubicación: ' + locationLabel($('locationSelect').value) + '. ' +
-        (state.activeGroup ? 'Grupo: ' + state.activeGroup + '. ' : 'Todos los grupos. ') +
-        'Total de las 3 ubicaciones: ' + formatNumber(totalGlobal.counted) + ' / ' + formatNumber(totalGlobal.system) +
-        ' unidades; ' + formatNumber(totalGlobal.codes) + ' códigos con conteo.';
+      $('progressNote').textContent = (state.activeGroup ? 'Grupo: ' + state.activeGroup + '. ' : 'Todos los grupos. ') +
+        'El avance suma 0120 + 0056 + EX. La ubicación seleccionada (' + locationLabel($('locationSelect').value) +
+        ') solo indica dónde se guardarán los próximos escaneos.';
     }
 
     function renderStockList() {
@@ -862,8 +1019,11 @@
           '<div class="stock-desc">' + escapeHtml(item.descripcion || 'Sin descripción') + '</div></div>' +
           '<span class="status-tag status-' + status.key + '">' + status.label + '</span></div>' +
           (groupText ? '<div class="stock-group">' + escapeHtml(groupText) + '</div>' : '') +
-          '<div class="stock-values"><div><span>En sistema</span><strong>' + formatNumber(values.system) + '</strong></div>' +
+          '<div class="stock-values"><div><span>En sistema (total)</span><strong>' + (values.system === null ? 'Sin dato' : formatNumber(values.system)) + '</strong></div>' +
           '<div><span>Ya contado</span><strong>' + formatNumber(values.counted) + '</strong></div></div>' +
+          (values.outsideTracked !== null && values.outsideTracked > 0.000001
+            ? '<div class="stock-footnote">' + formatNumber(values.outsideTracked) + ' unidad(es) del total están en segmentos que no se cuentan en 0120 / 0056 real / EX (por ejemplo, EC o SC). Se incluyen en el total global, pero no se generan movimientos para esos segmentos.</div>'
+            : '') +
           '</article>';
       }).join('');
       if (filtered.length > maxVisible) {
@@ -974,7 +1134,11 @@
     });
     $('addButton').addEventListener('click', addItem);
     $('retryButton').addEventListener('click', retryQueue);
-    $('locationSelect').addEventListener('change', () => { render(); focusCodeInput(); });
+    $('locationSelect').addEventListener('change', () => {
+      // No recalcular contra la ubicación: solo cambia el destino de las próximas altas.
+      render();
+      focusCodeInput();
+    });
     $('groupSelect').addEventListener('change', () => {
       state.activeGroup = $('groupSelect').value;
       persist();
@@ -989,6 +1153,10 @@
       renderStockList();
     });
     $('refreshButton').addEventListener('click', async () => {
+      if (state.queue.length || state.sending) {
+        showMessage('mainMessage', 'Hay cambios pendientes de envío. Primero tocá “Reintentar envío”; después actualizá el estado del stock.', 'warning');
+        return;
+      }
       $('refreshButton').disabled = true;
       $('refreshButton').textContent = 'Actualizando...';
       const updated = await initializeCatalog(true);
@@ -1028,9 +1196,10 @@
     restore();
     setConnection();
     render();
-    initializeCatalog();
     focusCodeInput();
-    if (state.queue.length) retryQueue();
+    initializeCatalog().then(() => {
+      if (state.queue.length) retryQueue();
+    });
   </script>
 </body>
 </html>
