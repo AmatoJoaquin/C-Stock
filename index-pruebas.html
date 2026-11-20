@@ -707,6 +707,177 @@
         font-size: 11px;
         font-weight: 800;
       }
+      /* ---------- Reporte de resultados ---------- */
+      .report-card {
+        border-top: 4px solid var(--navy-2);
+      }
+      .report-filters {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .report-filters label {
+        margin-bottom: 5px;
+      }
+      .report-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: 999px;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: 0.4px;
+        white-space: nowrap;
+      }
+      .report-badge.final {
+        background: var(--green);
+      }
+      .report-badge.preliminar {
+        background: var(--red);
+      }
+      .report-notices {
+        margin: 12px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .report-notices li {
+        margin-bottom: 8px;
+        padding: 10px 12px;
+        border-radius: 11px;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .report-notices li.blocking {
+        background: var(--red-soft);
+        color: #8f1d14;
+      }
+      .report-notices li.info {
+        background: #edf5fb;
+        color: #245a7e;
+      }
+      .report-notices li.clean {
+        background: var(--green-soft);
+        color: #17613b;
+      }
+      .report-notices small {
+        display: block;
+        margin-top: 4px;
+        opacity: 0.85;
+        font-size: 11px;
+        overflow-wrap: anywhere;
+      }
+      .check-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin: 10px 0 0;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 650;
+        line-height: 1.4;
+      }
+      .check-row input {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        flex: 0 0 18px;
+      }
+      .report-kpis {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin: 14px 0 10px;
+      }
+      .report-kpi {
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: #f5f8fb;
+        border-top: 3px solid var(--muted);
+      }
+      .report-kpi span {
+        display: block;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 750;
+        text-transform: uppercase;
+        letter-spacing: 0.45px;
+      }
+      .report-kpi strong {
+        display: block;
+        margin-top: 2px;
+        font-size: 21px;
+        letter-spacing: -0.5px;
+      }
+      .report-kpi small {
+        display: block;
+        color: var(--muted);
+        font-size: 10px;
+      }
+      .report-kpi.ok {
+        border-top-color: var(--green);
+      }
+      .report-kpi.sobrante {
+        border-top-color: var(--amber);
+      }
+      .report-kpi.faltante {
+        border-top-color: var(--red);
+      }
+      .report-units {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 12px;
+        padding: 10px;
+        border-radius: 12px;
+        background: #f5f8fb;
+      }
+      .report-units span {
+        display: block;
+        color: var(--muted);
+        font-size: 10px;
+      }
+      .report-units strong {
+        display: block;
+        margin-top: 2px;
+        font-size: 15px;
+      }
+      .stock-values.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .status-faltante {
+        background: var(--red-soft);
+        color: var(--red);
+      }
+      .status-sobrante {
+        background: var(--amber-soft);
+        color: #875708;
+      }
+      .report-pdf {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+      }
+      .report-pdf .toolbar {
+        margin-top: 12px;
+      }
+      .report-pdf .btn-primary {
+        width: auto;
+      }
+      .diff-pos {
+        color: #8a5a06;
+      }
+      .diff-neg {
+        color: var(--red);
+      }
+      @media (min-width: 560px) {
+        .report-filters {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .report-kpis {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+      }
       @media (max-width: 380px) {
         .stats {
           gap: 6px;
@@ -960,6 +1131,105 @@
           </p>
         </section>
 
+        <section
+          class="card report-card"
+          id="reportCard"
+          aria-labelledby="reportTitle"
+        >
+          <div class="list-head">
+            <h2 id="reportTitle">Reporte de resultados</h2>
+            <span class="report-badge" id="reportBadge" hidden></span>
+          </div>
+          <p class="helper" style="margin-top: 0">
+            Resultado por total (0120 + 0056 + EX) frente al stock total del
+            sistema: OK, SOBRANTE o FALTANTE. Solo consulta datos: no modifica
+            la planilla ni aplica movimientos.
+          </p>
+          <div class="report-filters">
+            <div>
+              <label for="reportGroup">Grupo</label>
+              <select class="field" id="reportGroup">
+                <option value="">Todos los grupos</option>
+              </select>
+            </div>
+            <div id="reportCategoryWrap" hidden>
+              <label for="reportCategory">Categoría</label>
+              <select class="field" id="reportCategory">
+                <option value="">Todas las categorías</option>
+              </select>
+            </div>
+          </div>
+          <button
+            class="btn btn-secondary"
+            id="reportLoadButton"
+            type="button"
+            style="width: 100%; margin-top: 12px"
+          >
+            Consultar resultados
+          </button>
+          <div
+            id="reportMessage"
+            class="message"
+            role="status"
+            aria-live="polite"
+            style="margin: 12px 0 0"
+          ></div>
+
+          <div id="reportBody" hidden>
+            <ul class="report-notices" id="reportNotices"></ul>
+            <label class="check-row" id="reportConfirmWrap" hidden>
+              <input type="checkbox" id="reportConfirm" />
+              <span id="reportConfirmText"></span>
+            </label>
+
+            <div class="report-kpis" id="reportKpis"></div>
+            <div class="report-units" id="reportUnits"></div>
+
+            <input
+              class="field stock-search"
+              id="reportSearch"
+              type="search"
+              placeholder="Buscar código o descripción..."
+              autocomplete="off"
+            />
+            <div
+              class="filter-bar"
+              id="reportFilters"
+              aria-label="Filtrar resultados"
+            ></div>
+            <div class="stock-list" id="reportList"></div>
+
+            <div class="report-pdf">
+              <label for="reportDate">Fecha en que se realizó el conteo</label>
+              <input class="field" id="reportDate" type="date" />
+              <label class="check-row">
+                <input type="checkbox" id="reportIncludeOk" checked />
+                <span>Incluir el detalle de artículos OK en el PDF</span>
+              </label>
+              <label class="check-row">
+                <input type="checkbox" id="reportIncludeEx" />
+                <span>Incluir anexo de distribución en exhibición</span>
+              </label>
+              <div class="toolbar">
+                <button
+                  class="btn btn-outline"
+                  id="reportViewButton"
+                  type="button"
+                >
+                  👁 Ver PDF
+                </button>
+                <button
+                  class="btn btn-primary"
+                  id="reportDownloadButton"
+                  type="button"
+                >
+                  ⬇ Descargar PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section class="card">
           <div class="section-title"><h2>Acceso a la planilla</h2></div>
           <button
@@ -1012,7 +1282,7 @@
 
       // URL del Web App de Google Apps Script.
       const WEB_APP_URL =
-        "https://script.google.com/macros/s/AKfycbx_VhAaDPcw1nHQw6ZvAKs88f9eKJ111w3hOi5HFKOv2ErrlMvpKMBOeR1t1qID1ugI/exec";
+        "https://script.google.com/macros/s/AKfycbxMN-rkjLN-0wqIBOPK6B21HQS4bwWM-2oAiLwN2nmmxdP1uBLgHXpyKVDpRsFIEe5E/exec";
       const STORAGE_KEY_BASE =
         "tomaStockApp_v2_" + WEB_APP_URL.split("/").slice(-2, -1)[0] + "_";
 
@@ -1544,7 +1814,10 @@
         return false;
       }
 
-      async function postToAppsScript(payload) {
+      // options (opcional, compatible con las llamadas existentes):
+      //   frameName: iframe propio para que un reporte no interrumpa la cola.
+      //   timeoutMs / timeoutMessage: los PDF grandes pueden tardar más de 30 s.
+      async function postToAppsScript(payload, options = {}) {
         const user = auth.currentUser;
         if (!user) throw new Error("No hay una sesión Google iniciada.");
 
@@ -1553,7 +1826,7 @@
         const idToken = await user.getIdToken();
         const authenticatedPayload = { ...payload, idToken };
 
-        const frameName = "appsScriptTransportFrame";
+        const frameName = options.frameName || "appsScriptTransportFrame";
         let frame = document.getElementById(frameName);
 
         if (!frame) {
@@ -1570,13 +1843,16 @@
 
         return new Promise((resolve, reject) => {
           let settled = false;
+          const timeoutMs =
+            Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : 30000;
           const timeout = window.setTimeout(() => {
             finish(
               new Error(
-                "Apps Script no confirmó la operación a tiempo. Quedó pendiente para reintentar.",
+                options.timeoutMessage ||
+                  "Apps Script no confirmó la operación a tiempo. Quedó pendiente para reintentar.",
               ),
             );
-          }, 30000);
+          }, timeoutMs);
 
           function finish(error, data) {
             if (settled) return;
@@ -2452,6 +2728,569 @@
         setConnection();
       }
 
+      // ==================== REPORTE DE RESULTADOS ====================
+      // La clasificación OK / SOBRANTE / FALTANTE, los totales y las
+      // advertencias se calculan solo en el servidor
+      // (construirReporteInventario_ en Code.gs). Aquí únicamente se muestra
+      // el resultado, se busca y se filtra la vista.
+      const REPORT_FRAME = "appsScriptReportFrame";
+      const reportState = {
+        uid: "",
+        data: null,
+        loading: false,
+        filter: "difference",
+        query: "",
+      };
+
+      const REPORT_FILTERS = [
+        {
+          key: "difference",
+          label: "Con diferencia",
+          match: (a) => a.estado !== "OK",
+          count: (r) => r.sobrante + r.faltante,
+        },
+        {
+          key: "FALTANTE",
+          label: "Faltante",
+          match: (a) => a.estado === "FALTANTE",
+          count: (r) => r.faltante,
+        },
+        {
+          key: "SOBRANTE",
+          label: "Sobrante",
+          match: (a) => a.estado === "SOBRANTE",
+          count: (r) => r.sobrante,
+        },
+        {
+          key: "OK",
+          label: "OK",
+          match: (a) => a.estado === "OK",
+          count: (r) => r.ok,
+        },
+        {
+          key: "all",
+          label: "Todos",
+          match: () => true,
+          count: (r) => r.articulos,
+        },
+      ];
+
+      function todayIso() {
+        const d = new Date();
+        return (
+          d.getFullYear() +
+          "-" +
+          String(d.getMonth() + 1).padStart(2, "0") +
+          "-" +
+          String(d.getDate()).padStart(2, "0")
+        );
+      }
+
+      function formatReportNumber(value) {
+        return new Intl.NumberFormat("es-AR", {
+          maximumFractionDigits: 6,
+        }).format(Number(value) || 0);
+      }
+
+      function formatReportDiff(value) {
+        const n = Number(value) || 0;
+        return (n > 0 ? "+" : "") + formatReportNumber(n);
+      }
+
+      function diffClass(value) {
+        const n = Number(value) || 0;
+        return n > 0 ? "diff-pos" : n < 0 ? "diff-neg" : "";
+      }
+
+      function resetReportView() {
+        reportState.data = null;
+        reportState.filter = "difference";
+        reportState.query = "";
+        $("reportSearch").value = "";
+        $("reportConfirm").checked = false;
+        $("reportBody").hidden = true;
+        $("reportBadge").hidden = true;
+        $("reportLoadButton").textContent = "Consultar resultados";
+        hideMessage("reportMessage");
+      }
+
+      // Nunca mostrar el reporte consultado por otra cuenta.
+      function ensureReportOwner() {
+        const uid = auth.currentUser ? auth.currentUser.uid : "";
+        if (reportState.uid !== uid) {
+          reportState.uid = uid;
+          resetReportView();
+        }
+      }
+
+      function fillReportSelect(select, values, current, emptyLabel) {
+        select.innerHTML =
+          '<option value="">' +
+          escapeHtml(emptyLabel) +
+          "</option>" +
+          values
+            .map(
+              (value) =>
+                '<option value="' +
+                escapeHtml(value) +
+                '">' +
+                escapeHtml(value) +
+                "</option>",
+            )
+            .join("");
+        select.value = values.includes(current) ? current : "";
+      }
+
+      function setReportBusy(busy) {
+        reportState.loading = busy;
+        [
+          "reportLoadButton",
+          "reportViewButton",
+          "reportDownloadButton",
+          "reportGroup",
+          "reportCategory",
+          "reportConfirm",
+        ].forEach((id) => {
+          $(id).disabled = busy;
+        });
+      }
+
+      function pendingQueueNotice() {
+        const n = state.queue.length;
+        return n
+          ? "Hay " +
+              n +
+              (n === 1 ? " operación" : " operaciones") +
+              " de este celular sin enviar: el reporte todavía no las incluye. Sincronizá y volvé a consultar."
+          : "";
+      }
+
+      async function loadReport() {
+        ensureReportOwner();
+        if (!auth.currentUser || reportState.loading) return false;
+        if (!navigator.onLine) {
+          showMessage(
+            "reportMessage",
+            "Sin conexión: el reporte necesita consultar la planilla.",
+            "warning",
+          );
+          return false;
+        }
+
+        const firstLoad = !reportState.data;
+        const grupo = firstLoad
+          ? state.groups.includes(state.activeGroup)
+            ? state.activeGroup
+            : ""
+          : $("reportGroup").value;
+        const categoria = firstLoad ? "" : $("reportCategory").value;
+        const requestUid = auth.currentUser.uid;
+
+        setReportBusy(true);
+        $("reportLoadButton").textContent = "Consultando...";
+        showMessage("reportMessage", "Consultando la planilla...", "info");
+
+        try {
+          const data = await postToAppsScript(
+            {
+              action: "report",
+              grupo,
+              categoria,
+              confirmarMovimientos:
+                !$("reportConfirmWrap").hidden && $("reportConfirm").checked,
+            },
+            {
+              frameName: REPORT_FRAME,
+              timeoutMs: 90000,
+              timeoutMessage:
+                "La planilla no respondió a tiempo. Probá de nuevo en unos segundos.",
+            },
+          );
+          if (!auth.currentUser || auth.currentUser.uid !== requestUid)
+            return false;
+
+          reportState.data = data.reporte;
+          renderReport();
+          const queueText = pendingQueueNotice();
+          if (queueText) showMessage("reportMessage", queueText, "warning");
+          else hideMessage("reportMessage");
+          return true;
+        } catch (error) {
+          showMessage(
+            "reportMessage",
+            "No se pudo consultar el reporte. " +
+              (error && error.message ? error.message : ""),
+            "error",
+          );
+          return false;
+        } finally {
+          setReportBusy(false);
+          $("reportLoadButton").textContent = reportState.data
+            ? "↻ Actualizar resultados"
+            : "Consultar resultados";
+        }
+      }
+
+      function renderReport() {
+        const rep = reportState.data;
+        if (!rep) {
+          $("reportBody").hidden = true;
+          $("reportBadge").hidden = true;
+          return;
+        }
+
+        fillReportSelect(
+          $("reportGroup"),
+          rep.grupos,
+          rep.filtros.grupo,
+          "Todos los grupos",
+        );
+        $("reportCategoryWrap").hidden = !rep.categorias.length;
+        fillReportSelect(
+          $("reportCategory"),
+          rep.categorias,
+          rep.filtros.categoria,
+          "Todas las categorías",
+        );
+
+        const isFinal = rep.emision.tipo === "FINAL";
+        const badge = $("reportBadge");
+        badge.hidden = false;
+        badge.className = "report-badge " + (isFinal ? "final" : "preliminar");
+        badge.textContent = isFinal ? "FINAL" : "PRELIMINAR";
+
+        const notices = rep.advertencias.map((a) => {
+          const codes = a.codigos.length
+            ? "<small>" +
+              a.codigos.slice(0, 40).map(escapeHtml).join(", ") +
+              (a.codigos.length > 40
+                ? " y " + (a.codigos.length - 40) + " más"
+                : "") +
+              "</small>"
+            : "";
+          return (
+            '<li class="' +
+            (a.nivel === "bloqueante" ? "blocking" : "info") +
+            '">' +
+            escapeHtml(a.mensaje) +
+            codes +
+            "</li>"
+          );
+        });
+        $("reportNotices").innerHTML = notices.length
+          ? notices.join("")
+          : '<li class="clean">Sin observaciones: no hay movimientos entre ubicaciones pendientes ni inconsistencias de conteo. El PDF se emitirá como FINAL.</li>';
+
+        const mov = rep.movimientos;
+        const canConfirm = mov.pendientes > 0 && mov.coincidenConHoja;
+        $("reportConfirmWrap").hidden = !canConfirm;
+        if (canConfirm) {
+          $("reportConfirmText").textContent =
+            "Confirmo que los " +
+            mov.pendientes +
+            " movimiento(s) de la hoja MOVIMIENTOS ya fueron pasados al sistema.";
+          $("reportConfirm").checked = mov.confirmados;
+        } else {
+          $("reportConfirm").checked = false;
+        }
+
+        const r = rep.resumen;
+        const pct = (n) =>
+          r.articulos
+            ? formatReportNumber(Math.round((n / r.articulos) * 1000) / 10) +
+              " %"
+            : "0 %";
+        $("reportKpis").innerHTML =
+          '<div class="report-kpi"><span>Analizados</span><strong>' +
+          formatReportNumber(r.articulos) +
+          "</strong><small>" +
+          formatReportNumber(r.conConteo) +
+          " con unidades contadas</small></div>" +
+          '<div class="report-kpi ok"><span>OK</span><strong>' +
+          formatReportNumber(r.ok) +
+          "</strong><small>" +
+          pct(r.ok) +
+          "</small></div>" +
+          '<div class="report-kpi sobrante"><span>Sobrante</span><strong>' +
+          formatReportNumber(r.sobrante) +
+          "</strong><small>" +
+          formatReportDiff(r.unidadesSobrantes) +
+          " unidades</small></div>" +
+          '<div class="report-kpi faltante"><span>Faltante</span><strong>' +
+          formatReportNumber(r.faltante) +
+          "</strong><small>" +
+          formatReportDiff(-r.unidadesFaltantes) +
+          " unidades</small></div>";
+
+        $("reportUnits").innerHTML =
+          "<div><span>Stock sistema</span><strong>" +
+          formatReportNumber(r.sistema) +
+          "</strong></div>" +
+          "<div><span>Contado total</span><strong>" +
+          formatReportNumber(r.contado) +
+          "</strong></div>" +
+          '<div><span>Diferencia neta</span><strong class="' +
+          diffClass(r.diferenciaNeta) +
+          '">' +
+          formatReportDiff(r.diferenciaNeta) +
+          "</strong></div>";
+
+        $("reportBody").hidden = false;
+        renderReportList();
+      }
+
+      function renderReportList() {
+        const rep = reportState.data;
+        if (!rep) return;
+        const active =
+          REPORT_FILTERS.find((f) => f.key === reportState.filter) ||
+          REPORT_FILTERS[0];
+
+        $("reportFilters").innerHTML = REPORT_FILTERS.map(
+          (f) =>
+            '<button class="filter-btn' +
+            (f.key === active.key ? " active" : "") +
+            '" type="button" data-report-filter="' +
+            f.key +
+            '">' +
+            escapeHtml(f.label) +
+            " (" +
+            formatReportNumber(f.count(rep.resumen)) +
+            ")</button>",
+        ).join("");
+
+        const query = normalizeText(reportState.query);
+        const filtered = rep.articulos.filter(
+          (a) =>
+            active.match(a) &&
+            (!query ||
+              normalizeText(a.codigo + " " + a.descripcion).includes(query)),
+        );
+
+        const list = $("reportList");
+        if (!rep.articulos.length) {
+          list.innerHTML =
+            '<div class="empty"><div class="empty-icon">📦</div><strong>No hay artículos para informar</strong><p>Revisá el grupo elegido o importá StockDisponible.</p></div>';
+          return;
+        }
+        if (!filtered.length) {
+          list.innerHTML =
+            '<div class="empty"><div class="empty-icon">🔎</div><strong>No hay coincidencias</strong><p>Probá otro texto o elegí el filtro “Todos”.</p></div>';
+          return;
+        }
+
+        const statusClass = {
+          OK: "status-ok",
+          SOBRANTE: "status-sobrante",
+          FALTANTE: "status-faltante",
+        };
+        const maxVisible = 150;
+        list.innerHTML =
+          filtered
+            .slice(0, maxVisible)
+            .map((a) => {
+              const meta = [a.grupo, a.categoria].filter(Boolean).join(" · ");
+              return (
+                '<article class="stock-item">' +
+                '<div class="stock-top"><div style="min-width:0"><div class="stock-code">' +
+                escapeHtml(a.codigo) +
+                '</div><div class="stock-desc">' +
+                escapeHtml(a.descripcion || "Sin descripción") +
+                '</div></div><span class="status-tag ' +
+                statusClass[a.estado] +
+                '">' +
+                escapeHtml(a.estado) +
+                "</span></div>" +
+                (meta
+                  ? '<div class="stock-group">' + escapeHtml(meta) + "</div>"
+                  : "") +
+                '<div class="stock-values three">' +
+                "<div><span>Sistema</span><strong>" +
+                formatReportNumber(a.sistema) +
+                "</strong></div>" +
+                "<div><span>Contado</span><strong>" +
+                formatReportNumber(a.contado) +
+                "</strong></div>" +
+                '<div><span>Diferencia</span><strong class="' +
+                diffClass(a.diferencia) +
+                '">' +
+                formatReportDiff(a.diferencia) +
+                "</strong></div></div>" +
+                '<div class="stock-footnote">Contado por ubicación · 0120: ' +
+                formatReportNumber(a.cont120) +
+                " · 0056: " +
+                formatReportNumber(a.cont56) +
+                " · EX: " +
+                formatReportNumber(a.contEx) +
+                "</div></article>"
+              );
+            })
+            .join("") +
+          '<div class="stock-footnote">' +
+          (filtered.length > maxVisible
+            ? "Mostrando " +
+              maxVisible +
+              " de " +
+              formatReportNumber(filtered.length) +
+              " artículos. Usá el buscador para encontrar los demás; el PDF incluye todos."
+            : formatReportNumber(filtered.length) +
+              " artículo(s) en esta vista.") +
+          "</div>";
+      }
+
+      function base64ToPdfBlob(base64) {
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return new Blob([bytes], { type: "application/pdf" });
+      }
+
+      function downloadBlobUrl(url, filename) {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename || "Informe C-Stock.pdf";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
+
+      async function requestReportPdf(mode) {
+        ensureReportOwner();
+        const rep = reportState.data;
+        if (!rep || reportState.loading) return;
+
+        const fecha = $("reportDate").value;
+        if (!fecha) {
+          showMessage(
+            "reportMessage",
+            "Indicá la fecha en que se realizó el conteo.",
+            "error",
+          );
+          $("reportDate").focus();
+          return;
+        }
+        if (!navigator.onLine) {
+          showMessage(
+            "reportMessage",
+            "Sin conexión: el PDF se genera en la planilla.",
+            "warning",
+          );
+          return;
+        }
+
+        // La ventana se abre en el mismo toque para que el navegador no la bloquee.
+        let viewer = null;
+        if (mode === "view") {
+          viewer = window.open("", "_blank");
+          if (viewer) {
+            try {
+              viewer.document.title = "C-Stock · Generando PDF";
+              viewer.document.body.innerHTML =
+                '<p style="font:16px system-ui,sans-serif;padding:24px;color:#172433">Generando el PDF…</p>';
+            } catch (_) {}
+          }
+        }
+
+        const button =
+          mode === "view" ? $("reportViewButton") : $("reportDownloadButton");
+        const label = button.textContent;
+        setReportBusy(true);
+        button.textContent = "Generando...";
+        showMessage(
+          "reportMessage",
+          "Generando el PDF en la planilla. Puede tardar unos segundos...",
+          "info",
+        );
+
+        let resultText = "";
+        let resultType = "success";
+        let dataChanged = false;
+
+        try {
+          const data = await postToAppsScript(
+            {
+              action: "report_pdf",
+              grupo: rep.filtros.grupo,
+              categoria: rep.filtros.categoria,
+              fechaConteo: fecha,
+              confirmarMovimientos:
+                !$("reportConfirmWrap").hidden && $("reportConfirm").checked,
+              incluirOk: $("reportIncludeOk").checked,
+              incluirExhibicion: $("reportIncludeEx").checked,
+            },
+            {
+              frameName: REPORT_FRAME,
+              timeoutMs: 180000,
+              timeoutMessage:
+                "El PDF tardó demasiado en generarse. Probá de nuevo o elegí un grupo más chico.",
+            },
+          );
+
+          if (data.emision && data.emision.tipo === "PRELIMINAR")
+            resultType = "warning";
+          const url = URL.createObjectURL(base64ToPdfBlob(data.base64));
+          if (viewer && !viewer.closed) {
+            viewer.location.href = url;
+            resultText = data.message + " Se abrió en una pestaña nueva.";
+          } else {
+            downloadBlobUrl(url, data.filename);
+            window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+            resultText =
+              data.message +
+              (mode === "view"
+                ? " El navegador bloqueó la pestaña nueva; se descargó el archivo."
+                : " La descarga se inició.");
+          }
+
+          if (data.firma !== rep.firma) {
+            dataChanged = true;
+            resultType = "warning";
+            resultText +=
+              " Los datos de la planilla cambiaron desde la consulta: la vista se actualizó con los mismos datos del PDF.";
+          }
+        } catch (error) {
+          if (viewer && !viewer.closed) viewer.close();
+          resultType = "error";
+          resultText =
+            "No se pudo generar el PDF. " +
+            (error && error.message ? error.message : "");
+        } finally {
+          setReportBusy(false);
+          button.textContent = label;
+        }
+
+        if (dataChanged) await loadReport();
+        showMessage("reportMessage", resultText, resultType);
+      }
+
+      $("reportDate").value = todayIso();
+      $("reportLoadButton").addEventListener("click", loadReport);
+      $("reportGroup").addEventListener("change", () => {
+        $("reportConfirm").checked = false;
+        if (reportState.data) loadReport();
+      });
+      $("reportCategory").addEventListener("change", () => {
+        $("reportConfirm").checked = false;
+        if (reportState.data) loadReport();
+      });
+      $("reportConfirm").addEventListener("change", loadReport);
+      $("reportSearch").addEventListener("input", () => {
+        reportState.query = $("reportSearch").value;
+        renderReportList();
+      });
+      $("reportFilters").addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-report-filter]");
+        if (!button) return;
+        reportState.filter = button.dataset.reportFilter;
+        renderReportList();
+      });
+      $("reportViewButton").addEventListener("click", () =>
+        requestReportPdf("view"),
+      );
+      $("reportDownloadButton").addEventListener("click", () =>
+        requestReportPdf("download"),
+      );
+
       // Eventos de entrada y escaneo.
       $("codeInput").addEventListener("input", (event) => {
         const input = event.target;
@@ -2597,6 +3436,9 @@
       setConnection();
 
       onAuthStateChanged(auth, handleAuthState);
+      // Observador adicional (no altera el inicio de sesión): limpia el
+      // reporte en pantalla cuando cambia la cuenta.
+      onAuthStateChanged(auth, ensureReportOwner);
     </script>
   </body>
 </html>
