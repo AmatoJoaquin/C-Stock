@@ -614,6 +614,27 @@
         flex-direction: column;
         gap: 9px;
       }
+      /* Scroll interno: se ven 2 artículos y asoma el 3.º (altura calculada en JS). */
+      .lista-scroll {
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        padding: 2px 4px 2px 2px;
+        margin: 0 -4px 0 -2px;
+        border-radius: 12px;
+        /* Sombras que indican que hay más contenido arriba/abajo. */
+        background:
+          linear-gradient(var(--surface) 30%, transparent) top / 100% 28px no-repeat local,
+          linear-gradient(transparent, var(--surface) 70%) bottom / 100% 28px no-repeat local,
+          radial-gradient(farthest-side at 50% 0, rgba(16, 36, 58, 0.18), transparent) top / 100% 10px no-repeat scroll,
+          radial-gradient(farthest-side at 50% 100%, rgba(16, 36, 58, 0.18), transparent) bottom / 100% 10px no-repeat scroll;
+      }
+      .lista-pista {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: 11px;
+        text-align: center;
+      }
       .item {
         border: 1px solid var(--line);
         border-radius: 14px;
@@ -1829,7 +1850,8 @@
                 ↻ Reintentar envío
               </button>
             </div>
-            <div class="item-list" id="itemList"></div>
+            <div class="item-list lista-scroll" id="itemList"></div>
+            <p class="lista-pista" id="itemListHint" hidden></p>
           </section>
 
           <section class="card" aria-labelledby="stockListTitle">
@@ -1864,7 +1886,8 @@
                 OK
               </button>
             </div>
-            <div class="stock-list" id="stockList"></div>
+            <div class="stock-list lista-scroll" id="stockList"></div>
+            <p class="lista-pista" id="stockListHint" hidden></p>
             <p class="stock-footnote">
               “Parcial” significa que todavía se contó menos que el stock total
               del sistema. “Sobrante” significa que se contó más. Los números
@@ -2298,7 +2321,7 @@
       } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
       window.__cstockReady = true;
-      const APP_VERSION = "2026.11.20-1";
+      const APP_VERSION = "2026.11.20-2";
       const MODULE_START = performance.now();
 
       // ===================== OBSERVACIONES AL CONTAR =====================
@@ -3208,6 +3231,7 @@
         $("codeInput").value = "";
         $("qtyInput").value = "1";
         resetObsDraft();
+        $("itemList").scrollTop = 0; // el artículo nuevo queda a la vista
         state.selectedSuggestion = null;
         $("suggestions").hidden = true;
         hideMessage("mainMessage");
@@ -4010,7 +4034,33 @@
               " artículo(s) en esta vista.</div>";
 
         list.innerHTML = html;
+        ajustarListaScroll(list, $("stockListHint"), filtered.length, ".stock-item");
         perfEnd(handle);
+      }
+
+      // Limita la lista a 2 artículos visibles (asoma el 3.º) con scroll
+      // interno. Se mide con las tarjetas reales, así funciona aunque tengan
+      // observaciones o un editor abierto.
+      const LISTA_VISIBLES = 2;
+      function ajustarListaScroll(list, pista, total, selector, unidad = "artículos") {
+        const tarjetas = list.querySelectorAll(selector);
+        if (tarjetas.length <= LISTA_VISIBLES || !list.offsetParent) {
+          list.style.maxHeight = "";
+          if (pista) pista.hidden = true;
+          return;
+        }
+        const primera = tarjetas[0];
+        const tercera = tarjetas[LISTA_VISIBLES];
+        const asomo = Math.min(48, tercera.offsetHeight * 0.35);
+        const alto = tercera.offsetTop - primera.offsetTop + asomo + 4;
+        list.style.maxHeight = Math.round(alto) + "px";
+        if (pista) {
+          pista.hidden = false;
+          pista.textContent =
+            "↕ Deslizá dentro de la lista para ver los " +
+            formatNumber(total) +
+            " " + unidad + ", o usá el buscador.";
+        }
       }
 
       // Lista de la sesión con render por clave: solo se reconstruye la
@@ -4106,6 +4156,7 @@
           el.remove();
           rowHtmlCache.delete(id);
         });
+        ajustarListaScroll(list, $("itemListHint"), state.rows.length, ".item", "registros");
       }
 
       function renderQueueState() {
@@ -5233,7 +5284,20 @@
       let stockSearchTimer = 0;
       $("stockSearch").addEventListener("input", () => {
         window.clearTimeout(stockSearchTimer);
-        stockSearchTimer = window.setTimeout(renderStockList, 120);
+        stockSearchTimer = window.setTimeout(() => {
+          renderStockList();
+          $("stockList").scrollTop = 0;
+        }, 120);
+      });
+
+      // Recalcular la altura de las listas al girar el celular o cambiar el tamaño.
+      let listaResizeTimer = 0;
+      window.addEventListener("resize", () => {
+        window.clearTimeout(listaResizeTimer);
+        listaResizeTimer = window.setTimeout(() => {
+          ajustarListaScroll($("itemList"), $("itemListHint"), state.rows.length, ".item", "registros");
+          ajustarListaScroll($("stockList"), $("stockListHint"), $("stockList").querySelectorAll(".stock-item").length, ".stock-item");
+        }, 150);
       });
 
       $("stockFilters").addEventListener("click", (event) => {
@@ -5241,6 +5305,7 @@
         if (!button) return;
         state.stockFilter = button.dataset.filter;
         renderStockList();
+        $("stockList").scrollTop = 0;
       });
 
       $("refreshButton").addEventListener("click", async () => {

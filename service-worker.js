@@ -22,7 +22,7 @@
  * Este archivo no reenvía solicitudes ni escribe en el backend.
  */
 
-const VERSION = "2026.11.20-1";
+const VERSION = "2026.11.20-2";
 const CACHE_PREFIX = "cstock-";
 const SHELL_CACHE = CACHE_PREFIX + "shell-" + VERSION;
 const LIB_CACHE = CACHE_PREFIX + "lib-firebase-13.4.0";
