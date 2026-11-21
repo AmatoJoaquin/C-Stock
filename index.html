@@ -119,6 +119,14 @@
         --c-short: #c26a12;
         --c-pending: #8a97a6;
         --c-review: #6b4fbb;
+        /* Ubicaciones (mismos tonos que los encabezados de cada hoja). */
+        --loc-0120: #1b5a86;
+        --loc-0120-soft: #e6f0f8;
+        --loc-0056: #1b7a45;
+        --loc-0056-soft: #e5f5ec;
+        --loc-ex: #8a6400;
+        --loc-ex-soft: #fbf2da;
+        --loc-ink: #ffffff;
         --radius: 17px;
       }
       :root[data-theme="dark"] {
@@ -170,6 +178,12 @@
         --c-short: #f0a35a;
         --c-pending: #6f8195;
         --c-review: #a990f0;
+        --loc-0120: #23699b;
+        --loc-0120-soft: #16293b;
+        --loc-0056: #1f7d48;
+        --loc-0056-soft: #142c20;
+        --loc-ex: #8f6a06;
+        --loc-ex-soft: #2f2612;
       }
 
       /* ===================== BASE ===================== */
@@ -397,6 +411,90 @@
         color: var(--muted);
         font-size: 11px;
       }
+      /* ===================== UBICACIÓN ACTIVA ===================== */
+      [data-loc="0120"] {
+        --loc: var(--loc-0120);
+        --loc-soft: var(--loc-0120-soft);
+      }
+      [data-loc="0056"] {
+        --loc: var(--loc-0056);
+        --loc-soft: var(--loc-0056-soft);
+      }
+      [data-loc="EX"] {
+        --loc: var(--loc-ex);
+        --loc-soft: var(--loc-ex-soft);
+      }
+      .location-card {
+        border-left: 6px solid var(--loc);
+        background: linear-gradient(90deg, var(--loc-soft), var(--surface) 70%);
+      }
+      #locationSelect {
+        min-height: 56px;
+        border-color: var(--loc);
+        color: var(--loc);
+        font-size: 18px;
+        font-weight: 850;
+      }
+      :root[data-theme="dark"] #locationSelect {
+        color: var(--ink);
+      }
+      .loc-banner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        min-height: 52px;
+        margin: 0 0 12px;
+        padding: 8px 14px;
+        border: 0;
+        border-radius: 12px;
+        background: var(--loc);
+        color: var(--loc-ink);
+        text-align: left;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .loc-banner-label {
+        flex: 0 0 auto;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        opacity: 0.85;
+      }
+      .loc-banner-text {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 19px;
+        font-weight: 900;
+        letter-spacing: -0.2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .loc-banner-change {
+        flex: 0 0 auto;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.18);
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .loc-banner.flash {
+        animation: loc-flash 0.7s ease-out;
+      }
+      @keyframes loc-flash {
+        0% {
+          box-shadow: 0 0 0 0 var(--loc);
+        }
+        100% {
+          box-shadow: 0 0 0 10px transparent;
+        }
+      }
+      .scan-card {
+        border-top: 4px solid var(--loc);
+      }
+
       .scan-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 94px;
@@ -1417,6 +1515,66 @@
       }
 
       /* ===================== RESPONSIVE ===================== */
+      /* Celular: la barra de escaneo va primero y queda fija debajo de las
+         pestañas al desplazarse, así el campo de código siempre está a mano. */
+      @media (max-width: 719px) {
+        html {
+          /* Lo que se enfoca o se desplaza no queda tapado por la barra fija. */
+          scroll-padding-top: calc(var(--scanbar-h, 220px) + 76px);
+        }
+        #viewCount {
+          display: flex;
+          flex-direction: column;
+        }
+        #viewCount > .scan-card {
+          order: -1;
+          position: sticky;
+          top: calc(env(safe-area-inset-top) + 59px);
+          z-index: 25;
+          padding: 10px 11px 11px;
+          box-shadow: var(--overlay-shadow);
+        }
+        .scan-card .section-title,
+        .scan-card > .helper,
+        .scan-card .scan-grid label {
+          display: none;
+        }
+        .scan-card .loc-banner {
+          min-height: 44px;
+          margin-bottom: 9px;
+          padding: 6px 12px;
+        }
+        .scan-card .loc-banner-text {
+          font-size: 17px;
+        }
+        .scan-card .loc-banner-label {
+          display: none; /* el color y el nombre ya lo dicen; deja lugar al nombre */
+        }
+        .scan-card #codeInput,
+        .scan-card #qtyInput {
+          min-height: 52px;
+        }
+        .scan-card #codeInput::placeholder {
+          text-transform: none;
+          letter-spacing: 0;
+          font-size: 15px;
+          font-weight: 650;
+        }
+        .scan-card .scan-grid {
+          grid-template-columns: minmax(0, 1fr) 78px;
+          gap: 8px;
+        }
+        .scan-card .obs-toggle {
+          min-height: 38px;
+          margin: 8px 0 8px;
+        }
+        .scan-card #addButton {
+          min-height: 48px;
+        }
+        .scan-card .message.show {
+          margin-bottom: 8px;
+        }
+      }
       @media (max-width: 380px) {
         .stats {
           gap: 6px;
@@ -1675,7 +1833,12 @@
 
         <!-- ===================== VISTA CONTEO ===================== -->
         <div id="viewCount" role="tabpanel" aria-labelledby="tabCount">
-          <section class="card location-card" aria-labelledby="locationTitle">
+          <section
+            class="card location-card"
+            id="locationCard"
+            data-loc="0120"
+            aria-labelledby="locationTitle"
+          >
             <div class="section-title">
               <h2 id="locationTitle">
                 <span class="step">1</span>Depósito / ubicación
@@ -1740,12 +1903,30 @@
             </p>
           </section>
 
-          <section class="card" aria-labelledby="scanTitle">
+          <section
+            class="card scan-card"
+            id="scanCard"
+            data-loc="0120"
+            aria-labelledby="scanTitle"
+          >
             <div class="section-title">
               <h2 id="scanTitle">
                 <span class="step">2</span>Escanear o cargar artículo
               </h2>
             </div>
+            <!-- Ubicación activa, grande y con color propio. Tocar para cambiarla. -->
+            <button
+              class="loc-banner"
+              id="locBanner"
+              type="button"
+              aria-describedby="locBannerHint"
+            >
+              <span class="loc-banner-label">Contando en</span>
+              <strong class="loc-banner-text" id="locBannerText"
+                >0120 · Depósito</strong
+              >
+              <span class="loc-banner-change" id="locBannerHint">Cambiar</span>
+            </button>
             <div
               id="mainMessage"
               class="message"
@@ -2342,7 +2523,7 @@
       } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
       window.__cstockReady = true;
-      const APP_VERSION = "2026.11.20-3";
+      const APP_VERSION = "2026.11.21-1";
       const MODULE_START = performance.now();
 
       // ===================== OBSERVACIONES AL CONTAR =====================
@@ -2425,6 +2606,13 @@
       // un escaneo no reescriba todo el catálogo ni falle por cuota.
       const CATALOG_SUFFIX = "_catalog";
       const THEME_KEY = "cstock_theme";
+      // Ubicación elegida, por usuario (clave nueva; no toca conteos ni cola).
+      const LOCATION_SUFFIX = "_location";
+      // Tras sincronizar, el catálogo se vuelve a descargar recién después de
+      // este tiempo sin escaneos (antes se descargaba entero en cada escaneo).
+      const CATALOG_IDLE_MS = 30000;
+      let catalogRefreshTimer = 0;
+      let catalogRefreshWhenVisible = false;
 
       const EPSILON = 0.000001;
       const LOCATIONS = ["0120", "0056", "EX"];
@@ -2831,7 +3019,108 @@
         state.dashboardLoading = false;
         catalogStoredSeparately = false;
         rowHtmlCache.clear();
+        cancelCatalogRefresh();
+        setLocation("0120", { save: false });
         invalidateDerived();
+      }
+
+      // ===================== UBICACIÓN ACTIVA =====================
+      function setLocation(value, options = {}) {
+        const loc = LOCATIONS.includes(value) ? value : "0120";
+        const select = $("locationSelect");
+        const changed = $("scanCard").dataset.loc !== loc;
+        select.value = loc;
+        const text = locationLabel(loc); // nombre corto, entra en el celular
+        $("locBannerText").textContent = text;
+        $("locBanner").setAttribute(
+          "aria-label",
+          "Contando en " + text + ". Tocar para cambiar la ubicación.",
+        );
+        $("locationCard").dataset.loc = loc;
+        $("scanCard").dataset.loc = loc;
+        if (options.save !== false && STORAGE_KEY) {
+          try {
+            localStorage.setItem(STORAGE_KEY + LOCATION_SUFFIX, loc);
+          } catch (error) {
+            // No crítico: la ubicación se puede volver a elegir.
+          }
+        }
+        if (changed && options.flash) {
+          const banner = $("locBanner");
+          banner.classList.remove("flash");
+          void banner.offsetWidth; // reinicia la animación
+          banner.classList.add("flash");
+        }
+      }
+
+      function restoreLocation() {
+        let saved = "";
+        try {
+          saved = STORAGE_KEY
+            ? localStorage.getItem(STORAGE_KEY + LOCATION_SUFFIX) || ""
+            : "";
+        } catch (error) {
+          saved = "";
+        }
+        setLocation(saved || "0120", { save: false });
+      }
+
+      function openLocationPicker() {
+        const select = $("locationSelect");
+        try {
+          if (typeof select.showPicker === "function") {
+            select.showPicker();
+            return;
+          }
+        } catch (error) {
+          // Algunos navegadores no permiten showPicker en <select>.
+        }
+        $("locationCard").scrollIntoView({ behavior: "smooth", block: "center" });
+        select.focus({ preventScroll: true });
+      }
+
+      // ============ REFRESCO DIFERIDO DEL CATÁLOGO TRAS SINCRONIZAR ============
+      // Los escaneos ya enviados siguen sumándose en pantalla (delta local)
+      // hasta que llega el catálogo nuevo, así que esperar no altera los números.
+      function cancelCatalogRefresh() {
+        window.clearTimeout(catalogRefreshTimer);
+        catalogRefreshTimer = 0;
+        catalogRefreshWhenVisible = false;
+      }
+
+      function scheduleCatalogRefresh(delay = CATALOG_IDLE_MS) {
+        window.clearTimeout(catalogRefreshTimer);
+        catalogRefreshTimer = window.setTimeout(
+          runScheduledCatalogRefresh,
+          Math.max(1000, delay),
+        );
+      }
+
+      async function runScheduledCatalogRefresh() {
+        catalogRefreshTimer = 0;
+        // Con cola pendiente o envío en curso no se refresca: al terminar la
+        // sincronización se vuelve a programar.
+        if (
+          !auth.currentUser ||
+          !navigator.onLine ||
+          state.sending ||
+          state.queue.length
+        )
+          return;
+        const idle = Date.now() - state.lastLocalChangeAt;
+        if (idle < CATALOG_IDLE_MS) {
+          scheduleCatalogRefresh(CATALOG_IDLE_MS - idle);
+          return;
+        }
+        if (document.visibilityState === "hidden") {
+          catalogRefreshWhenVisible = true;
+          return;
+        }
+        if (state.view === "dashboard") {
+          await fetchDashboard({ includeCatalog: true, quiet: true });
+        } else {
+          await initializeCatalog(true);
+        }
       }
 
       // ===================== CATÁLOGO =====================
@@ -3532,20 +3821,18 @@
             auth.currentUser &&
             navigator.onLine
           ) {
-            // Una única solicitud: si el dashboard está abierto, trae catálogo
-            // y resumen juntos; si no, solo el catálogo (como antes).
-            const refreshed =
-              state.view === "dashboard"
-                ? await fetchDashboard({ includeCatalog: true, quiet: true })
-                : await initializeCatalog(true);
-            if (refreshed) {
-              showMessage(
-                "mainMessage",
-                "Sincronización completada. La lista y el avance ya están actualizados.",
-                "success",
-              );
-              window.setTimeout(() => hideMessage("mainMessage"), 3000);
+            if (processed) {
+              const texto = "Sincronizado con la planilla.";
+              showMessage("mainMessage", texto, "success");
+              window.setTimeout(() => {
+                if ($("mainMessage").textContent === texto)
+                  hideMessage("mainMessage");
+              }, 2200);
             }
+            // El avance ya incluye lo enviado (delta local). El catálogo
+            // completo (con lo que cargaron otros) se trae recién después de
+            // una pausa sin escaneos, en una sola solicitud.
+            scheduleCatalogRefresh();
           }
         }
       }
@@ -5150,6 +5437,7 @@
         const validateHandle = perfStart("auth.validate");
         STORAGE_KEY = STORAGE_KEY_BASE + user.uid;
         restore();
+        restoreLocation();
 
         $("authSignedOut").hidden = true;
         $("authSignedIn").hidden = false;
@@ -5317,9 +5605,11 @@
       $("retryButton").addEventListener("click", retryQueue);
 
       $("locationSelect").addEventListener("change", () => {
+        setLocation($("locationSelect").value, { flash: true });
         render();
         focusCodeInput();
       });
+      $("locBanner").addEventListener("click", openLocationPicker);
 
       function changeGroup(value) {
         state.activeGroup = value;
@@ -5494,8 +5784,8 @@
           persist();
           setView("count", { scrollTo: "stockListTitle" });
         } else if (action === "location") {
-          $("locationSelect").value = target.dataset.loc;
-          setView("count", { scrollTo: "scanTitle" });
+          setLocation(target.dataset.loc, { flash: true });
+          setView("count", { scrollTo: "scanCard" });
           focusCodeInputForced();
         } else if (action === "retry") {
           retryQueue();
@@ -5549,8 +5839,25 @@
       // Guardado defensivo al ocultar la app (cambio de pestaña, bloqueo).
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "hidden" && STORAGE_KEY) persist();
+        if (
+          document.visibilityState === "visible" &&
+          catalogRefreshWhenVisible
+        ) {
+          catalogRefreshWhenVisible = false;
+          runScheduledCatalogRefresh();
+        }
       });
 
+      // Altura real de la barra de escaneo fija (celular), para que lo que se
+      // enfoca o se desplaza no quede tapado debajo de ella.
+      if ("ResizeObserver" in window) {
+        new ResizeObserver((entries) => {
+          const h = Math.round(entries[0].contentRect.height + 22);
+          document.documentElement.style.setProperty("--scanbar-h", h + "px");
+        }).observe($("scanCard"));
+      }
+
+      setLocation($("locationSelect").value, { save: false });
       setConnection();
       $("appVersionText").textContent = APP_VERSION;
 
