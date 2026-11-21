@@ -669,6 +669,87 @@
         background: var(--green-soft);
         color: var(--green-ink);
       }
+      /* ---- Observaciones al contar ---- */
+      .tag.obs {
+        background: var(--amber-soft);
+        color: var(--amber-ink);
+      }
+      .obs-note {
+        margin-top: 7px;
+        padding: 5px 8px;
+        border-left: 3px solid var(--amber-ink);
+        border-radius: 0 8px 8px 0;
+        background: var(--amber-soft);
+        color: var(--amber-ink);
+        font-size: 11.5px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+      .obs-toggle {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-height: 42px;
+        margin: 2px 0 0;
+        padding: 0 12px;
+        border: 1px dashed var(--line);
+        border-radius: 12px;
+        background: var(--surface-2);
+        color: var(--ink-2);
+        font-size: 12px;
+        font-weight: 750;
+        cursor: pointer;
+      }
+      .obs-count {
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--amber-soft);
+        color: var(--amber-ink);
+        font-size: 10px;
+      }
+      .obs-panel {
+        margin-top: 8px;
+        padding: 10px;
+        border-radius: 12px;
+        background: var(--surface-2);
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .chip {
+        min-height: 38px;
+        padding: 0 12px;
+        border: 1.5px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--ink-3);
+        font-size: 12px;
+        font-weight: 750;
+        cursor: pointer;
+      }
+      .chip[aria-pressed="true"] {
+        border-color: var(--amber-ink);
+        background: var(--amber-soft);
+        color: var(--amber-ink);
+      }
+      .chip[aria-pressed="true"]::before {
+        content: "✓ ";
+      }
+      .obs-detail {
+        min-height: 42px;
+        margin-top: 8px;
+        font-size: 13px;
+      }
+      .btn-primary.with-obs {
+        background: #8a5a00;
+      }
+      :root[data-theme="dark"] .btn-primary.with-obs {
+        background: #a06b0c;
+      }
       .item-actions {
         display: flex;
         gap: 7px;
@@ -1682,6 +1763,37 @@
               El lector puede enviar <b>Enter</b> al terminar. También podés
               buscar por descripción y confirmar con Enter o con el botón.
             </p>
+            <button
+              class="obs-toggle"
+              id="obsToggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="obsPanel"
+            >
+              <span>⚑ Agregar observación (opcional)</span
+              ><span class="obs-count" id="obsCount" hidden></span>
+            </button>
+            <div class="obs-panel" id="obsPanel" hidden>
+              <div
+                class="chips"
+                id="obsChips"
+                role="group"
+                aria-label="Etiquetas de observación"
+              ></div>
+              <input
+                class="field obs-detail"
+                id="obsDetail"
+                type="text"
+                maxlength="150"
+                autocomplete="off"
+                placeholder="Detalle (opcional): ej. puerta del horno golpeada"
+              />
+              <p class="helper" style="margin-bottom: 0">
+                Se aplica solo a este escaneo. Después de agregarlo se limpia
+                para no marcar el siguiente artículo por error. No cambia la
+                cantidad contada.
+              </p>
+            </div>
             <button class="btn btn-primary" id="addButton" type="button">
               ＋ Agregar artículo
             </button>
@@ -2186,8 +2298,64 @@
       } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
       window.__cstockReady = true;
-      const APP_VERSION = "2026.11.19-1";
+      const APP_VERSION = "2026.11.20-1";
       const MODULE_START = performance.now();
+
+      // ===================== OBSERVACIONES AL CONTAR =====================
+      // Deben coincidir con OBS_ETIQUETAS de Code.gs (el servidor descarta otras).
+      const OBS_ETIQUETAS = Object.freeze([
+        "Golpeado / dañado",
+        "Outlet",
+        "Scrap",
+        "Revisar",
+        "Sin etiqueta",
+      ]);
+      const OBS_DETALLE_MAX = 150;
+      // Observación pendiente para el PRÓXIMO escaneo (se limpia al agregar).
+      const obsDraft = { etiquetas: [], detalle: "" };
+
+      function limpiarDetalleObs(valor) {
+        return String(valor || "")
+          .replace(/[\u0000-\u001f\u007f]+/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, OBS_DETALLE_MAX);
+      }
+
+      function obsEtiquetas(item) {
+        return Array.isArray(item && item.observacion)
+          ? item.observacion.filter((t) => OBS_ETIQUETAS.includes(t))
+          : [];
+      }
+
+      function renderObsDraft() {
+        const n = obsDraft.etiquetas.length;
+        const hayObs = n > 0 || !!obsDraft.detalle;
+        document.querySelectorAll("#obsChips [data-obs-chip]").forEach((chip) => {
+          chip.setAttribute(
+            "aria-pressed",
+            String(obsDraft.etiquetas.includes(chip.dataset.obsChip)),
+          );
+        });
+        if (document.getElementById("obsDetail").value !== obsDraft.detalle &&
+            !obsDraft.detalle) {
+          document.getElementById("obsDetail").value = "";
+        }
+        const contador = document.getElementById("obsCount");
+        contador.hidden = !hayObs;
+        contador.textContent = n
+          ? n + (n === 1 ? " etiqueta" : " etiquetas")
+          : "con detalle";
+        const boton = document.getElementById("addButton");
+        boton.textContent = hayObs ? "＋ Agregar con observación" : "＋ Agregar artículo";
+        boton.classList.toggle("with-obs", hayObs);
+      }
+
+      function resetObsDraft() {
+        obsDraft.etiquetas = [];
+        obsDraft.detalle = "";
+        renderObsDraft();
+      }
 
       // La API Key web de Firebase es pública y se utiliza en el navegador.
       // La autorización real se comprueba en Apps Script con el ID token.
@@ -3015,26 +3183,31 @@
           snapshotUnits: 0,
           serverCode: "",
           serverUnits: 0,
+          observacion: obsDraft.etiquetas.slice(),
+          detalle: obsDraft.detalle,
         };
 
-        state.rows.unshift(item);
-        state.queue.push({
-          id,
+        const payloadAlta = {
           action: "add",
-          payload: {
-            action: "add",
-            requestId: id,
-            deposito: location,
-            codigo: code,
-            cantidad: quantity,
-          },
-        });
+          requestId: id,
+          deposito: location,
+          codigo: code,
+          cantidad: quantity,
+        };
+        if (item.observacion.length || item.detalle) {
+          payloadAlta.observacion = item.observacion;
+          payloadAlta.detalle = item.detalle;
+        }
+
+        state.rows.unshift(item);
+        state.queue.push({ id, action: "add", payload: payloadAlta });
         state.lastLocalChangeAt = Date.now();
 
         persist();
         render();
         $("codeInput").value = "";
         $("qtyInput").value = "1";
+        resetObsDraft();
         state.selectedSuggestion = null;
         $("suggestions").hidden = true;
         hideMessage("mainMessage");
@@ -3213,6 +3386,12 @@
               if (op.action === "update") {
                 payload.codigo = op.codigo;
                 payload.cantidad = op.cantidad;
+                // Las ediciones encoladas antes de esta versión no traen
+                // observación: el servidor deja la existente sin tocar.
+                if (op.observacion !== undefined) {
+                  payload.observacion = op.observacion;
+                  payload.detalle = op.detalle || "";
+                }
               }
             }
 
@@ -3326,7 +3505,7 @@
         }
       }
 
-      function updateItem(id, codeRaw, quantityRaw) {
+      function updateItem(id, codeRaw, quantityRaw, obs) {
         const item = state.rows.find((row) => row.id === id);
         if (!item) return;
 
@@ -3356,14 +3535,23 @@
         item.grupo = (getCatalogItem(code) || {}).grupo || "";
         item.cantidad = quantity;
         item.status = "pending";
+        if (obs) {
+          item.observacion = obs.etiquetas.slice();
+          item.detalle = obs.detalle;
+        }
 
-        state.queue.push({
+        const opEdicion = {
           id,
           action: "update",
           codigo: code,
           cantidad: quantity,
           remote: item.remote || null,
-        });
+        };
+        if (obs) {
+          opEdicion.observacion = item.observacion;
+          opEdicion.detalle = item.detalle;
+        }
+        state.queue.push(opEdicion);
         state.lastLocalChangeAt = Date.now();
 
         state.activeEditor = null;
@@ -3843,8 +4031,10 @@
             <div class="item-meta">
               <span class="tag">${escapeHtml(locationLabel(item.deposito))}</span>
               ${item.grupo ? `<span class="tag">${escapeHtml(item.grupo)}</span>` : ""}
+              ${obsEtiquetas(item).map((t) => `<span class="tag obs">⚑ ${escapeHtml(t)}</span>`).join("")}
               <span class="tag ${pending ? "pending" : "sent"}">${pending ? "◷ Pendiente de envío" : "✓ Enviado"}</span>
             </div>
+            ${item.detalle ? `<div class="obs-note">${escapeHtml(item.detalle)}</div>` : ""}
             <div class="item-actions">
               <button class="btn btn-secondary btn-small" type="button" data-action="edit" data-id="${id}">✎ Editar</button>
               <button class="btn btn-danger btn-small" type="button" data-action="delete" data-id="${id}">⌫ Eliminar</button>
@@ -3854,6 +4044,9 @@
                 <div><label for="edit-code-${id}">Código</label><input class="field" id="edit-code-${id}" value="${escapeHtml(item.codigo)}" autocomplete="off" autocapitalize="characters"></div>
                 <div><label for="edit-qty-${id}">Cantidad</label><input class="field" id="edit-qty-${id}" type="number" min="0.01" step="any" value="${escapeHtml(item.cantidad)}"></div>
               </div>
+              <label style="margin-top:9px">Observación</label>
+              <div class="chips" id="edit-chips-${id}">${OBS_ETIQUETAS.map((t) => `<button class="chip" type="button" data-edit-chip="${escapeHtml(t)}" aria-pressed="${obsEtiquetas(item).includes(t)}">${escapeHtml(t)}</button>`).join("")}</div>
+              <input class="field obs-detail" id="edit-obs-${id}" maxlength="150" autocomplete="off" placeholder="Detalle (opcional)" value="${escapeHtml(item.detalle || "")}">
               <div class="editor-actions">
                 <button class="btn btn-primary btn-small" type="button" data-action="save" data-id="${id}">Guardar cambios</button>
                 <button class="btn btn-outline btn-small" type="button" data-action="cancel" data-id="${id}">Cancelar</button>
@@ -4976,6 +5169,44 @@
       });
 
       $("addButton").addEventListener("click", addItem);
+
+      // Observación del próximo escaneo: las etiquetas no roban el foco del
+      // campo de código, así el lector sigue escribiendo donde corresponde.
+      $("obsChips").innerHTML = OBS_ETIQUETAS.map(
+        (t) =>
+          `<button class="chip" type="button" data-obs-chip="${escapeHtml(t)}" aria-pressed="false">${escapeHtml(t)}</button>`,
+      ).join("");
+      $("obsChips").addEventListener("pointerdown", (event) => {
+        if (event.target.closest(".chip")) event.preventDefault();
+      });
+      $("obsChips").addEventListener("click", (event) => {
+        const chip = event.target.closest("button[data-obs-chip]");
+        if (!chip) return;
+        const tag = chip.dataset.obsChip;
+        const i = obsDraft.etiquetas.indexOf(tag);
+        if (i >= 0) obsDraft.etiquetas.splice(i, 1);
+        else obsDraft.etiquetas.push(tag);
+        // Se conserva el orden oficial de las etiquetas.
+        obsDraft.etiquetas.sort((a, b) => OBS_ETIQUETAS.indexOf(a) - OBS_ETIQUETAS.indexOf(b));
+        renderObsDraft();
+      });
+      $("obsDetail").addEventListener("input", () => {
+        obsDraft.detalle = limpiarDetalleObs($("obsDetail").value);
+        renderObsDraft();
+      });
+      $("obsDetail").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          addItem();
+        }
+      });
+      $("obsToggle").addEventListener("click", () => {
+        const abrir = $("obsPanel").hidden;
+        $("obsPanel").hidden = !abrir;
+        $("obsToggle").setAttribute("aria-expanded", String(abrir));
+        if (!abrir) focusCodeInput();
+      });
+      renderObsDraft();
       $("retryButton").addEventListener("click", retryQueue);
 
       $("locationSelect").addEventListener("change", () => {
@@ -5045,6 +5276,14 @@
       });
 
       $("itemList").addEventListener("click", (event) => {
+        const chip = event.target.closest("button[data-edit-chip]");
+        if (chip) {
+          chip.setAttribute(
+            "aria-pressed",
+            chip.getAttribute("aria-pressed") === "true" ? "false" : "true",
+          );
+          return;
+        }
         const button = event.target.closest("button[data-action]");
         if (!button) return;
 
@@ -5061,7 +5300,24 @@
           renderItems();
           focusCodeInput();
         } else if (action === "save") {
-          updateItem(id, $("edit-code-" + id).value, $("edit-qty-" + id).value);
+          const item = state.rows.find((row) => row.id === id);
+          const etiquetas = Array.from(
+            document.querySelectorAll(
+              "#edit-chips-" + CSS.escape(id) + ' [aria-pressed="true"]',
+            ),
+          ).map((b) => b.dataset.editChip);
+          const detalle = limpiarDetalleObs($("edit-obs-" + id).value);
+          // Solo se envía la observación si cambió (así no se reescribe su fecha).
+          const cambioObs =
+            item &&
+            (etiquetas.join("|") !== obsEtiquetas(item).join("|") ||
+              detalle !== (item.detalle || ""));
+          updateItem(
+            id,
+            $("edit-code-" + id).value,
+            $("edit-qty-" + id).value,
+            cambioObs ? { etiquetas, detalle } : null,
+          );
           focusCodeInput();
         } else if (action === "delete") {
           if (window.confirm("¿Eliminar este registro del conteo?"))
