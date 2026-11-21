@@ -1850,7 +1850,28 @@
                 ↻ Reintentar envío
               </button>
             </div>
+            <div id="sessionTools" hidden>
+              <input
+                class="field stock-search"
+                id="sessionSearch"
+                type="search"
+                placeholder="Buscar en la sesión: código, descripción u observación..."
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                aria-label="Buscar en los artículos de esta sesión"
+              />
+              <div class="filter-bar" id="sessionFilters" aria-label="Filtros de la sesión">
+                <button class="filter-btn active" type="button" data-sfilter="all">Todos</button>
+                <button class="filter-btn" type="button" data-sfilter="pending">Pendientes de envío</button>
+                <button class="filter-btn" type="button" data-sfilter="obs">Con observación</button>
+              </div>
+            </div>
             <div class="item-list lista-scroll" id="itemList"></div>
+            <div class="empty" id="sessionNoMatch" hidden>
+              <div class="empty-icon">🔎</div><strong>No hay registros que coincidan</strong>
+              <p>Probá otro texto o elegí “Todos”.</p>
+            </div>
             <p class="lista-pista" id="itemListHint" hidden></p>
           </section>
 
@@ -2321,7 +2342,7 @@
       } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
       window.__cstockReady = true;
-      const APP_VERSION = "2026.11.20-2";
+      const APP_VERSION = "2026.11.20-3";
       const MODULE_START = performance.now();
 
       // ===================== OBSERVACIONES AL CONTAR =====================
@@ -4117,12 +4138,28 @@
           state.rows.length +
           (state.rows.length === 1 ? " registro" : " registros");
 
+        $("sessionTools").hidden = state.rows.length === 0;
         if (!state.rows.length) {
           list.innerHTML =
             '<div class="empty"><div class="empty-icon">📋</div><strong>Todavía no hay artículos</strong><p>Escaneá el primer producto para comenzar el conteo.</p></div>';
           rowHtmlCache.clear();
+          $("sessionNoMatch").hidden = true;
+          $("itemListHint").hidden = true;
           return;
         }
+
+        // Buscador y filtros de la sesión: se ocultan las tarjetas que no
+        // coinciden (no se vuelven a dibujar).
+        const consulta = normalizeText(sessionFiltro.texto);
+        const coincide = (item, pending) => {
+          if (sessionFiltro.tipo === "pending" && !pending) return false;
+          if (sessionFiltro.tipo === "obs" && !obsEtiquetas(item).length && !item.detalle) return false;
+          if (!consulta) return true;
+          return normalizeText(
+            [item.codigo, item.descripcion, item.grupo, locationLabel(item.deposito), obsEtiquetas(item).join(" "), item.detalle || ""].join(" "),
+          ).includes(consulta);
+        };
+        let visibles = 0;
 
         const queuedIds = getDerived().queuedIds;
         const existing = new Map();
@@ -4145,6 +4182,9 @@
             rowHtmlCache.set(item.id, html);
           }
           existing.delete(item.id);
+          const mostrar = coincide(item, pending);
+          el.hidden = !mostrar;
+          if (mostrar) visibles++;
           const expected = previous
             ? previous.nextElementSibling
             : list.firstElementChild;
@@ -4156,8 +4196,24 @@
           el.remove();
           rowHtmlCache.delete(id);
         });
-        ajustarListaScroll(list, $("itemListHint"), state.rows.length, ".item", "registros");
+
+        const filtrando = !!consulta || sessionFiltro.tipo !== "all";
+        $("sessionNoMatch").hidden = visibles > 0;
+        document.querySelectorAll("#sessionFilters [data-sfilter]").forEach((b) => {
+          b.classList.toggle("active", b.dataset.sfilter === sessionFiltro.tipo);
+        });
+        ajustarListaScroll(list, $("itemListHint"), visibles, ".item:not([hidden])", "registros");
+        if (filtrando && visibles > 0) {
+          const pista = $("itemListHint");
+          pista.hidden = false;
+          pista.textContent =
+            "Mostrando " + formatNumber(visibles) + " de " + formatNumber(state.rows.length) +
+            " registros" + (visibles > LISTA_VISIBLES ? " · deslizá para ver todos" : "") + ".";
+        }
       }
+
+      // Estado del buscador de la sesión (no se guarda: se limpia al recargar).
+      const sessionFiltro = { texto: "", tipo: "all" };
 
       function renderQueueState() {
         const pendingCount = state.queue.length;
@@ -5290,12 +5346,39 @@
         }, 120);
       });
 
+      // Buscador de "Artículos de esta sesión".
+      let sessionSearchTimer = 0;
+      $("sessionSearch").addEventListener("input", () => {
+        window.clearTimeout(sessionSearchTimer);
+        sessionSearchTimer = window.setTimeout(() => {
+          sessionFiltro.texto = $("sessionSearch").value;
+          renderItems();
+          $("itemList").scrollTop = 0;
+        }, 100);
+      });
+      $("sessionSearch").addEventListener("keydown", (event) => {
+        // Enter no debe agregar nada: solo busca.
+        if (event.key === "Enter") event.preventDefault();
+        if (event.key === "Escape") {
+          $("sessionSearch").value = "";
+          sessionFiltro.texto = "";
+          renderItems();
+        }
+      });
+      $("sessionFilters").addEventListener("click", (event) => {
+        const boton = event.target.closest("button[data-sfilter]");
+        if (!boton) return;
+        sessionFiltro.tipo = boton.dataset.sfilter;
+        renderItems();
+        $("itemList").scrollTop = 0;
+      });
+
       // Recalcular la altura de las listas al girar el celular o cambiar el tamaño.
       let listaResizeTimer = 0;
       window.addEventListener("resize", () => {
         window.clearTimeout(listaResizeTimer);
         listaResizeTimer = window.setTimeout(() => {
-          ajustarListaScroll($("itemList"), $("itemListHint"), state.rows.length, ".item", "registros");
+          renderItems();
           ajustarListaScroll($("stockList"), $("stockListHint"), $("stockList").querySelectorAll(".stock-item").length, ".stock-item");
         }, 150);
       });
