@@ -1515,66 +1515,6 @@
       }
 
       /* ===================== RESPONSIVE ===================== */
-      /* Celular: la barra de escaneo va primero y queda fija debajo de las
-         pestañas al desplazarse, así el campo de código siempre está a mano. */
-      @media (max-width: 719px) {
-        html {
-          /* Lo que se enfoca o se desplaza no queda tapado por la barra fija. */
-          scroll-padding-top: calc(var(--scanbar-h, 220px) + 76px);
-        }
-        #viewCount {
-          display: flex;
-          flex-direction: column;
-        }
-        #viewCount > .scan-card {
-          order: -1;
-          position: sticky;
-          top: calc(env(safe-area-inset-top) + 59px);
-          z-index: 25;
-          padding: 10px 11px 11px;
-          box-shadow: var(--overlay-shadow);
-        }
-        .scan-card .section-title,
-        .scan-card > .helper,
-        .scan-card .scan-grid label {
-          display: none;
-        }
-        .scan-card .loc-banner {
-          min-height: 44px;
-          margin-bottom: 9px;
-          padding: 6px 12px;
-        }
-        .scan-card .loc-banner-text {
-          font-size: 17px;
-        }
-        .scan-card .loc-banner-label {
-          display: none; /* el color y el nombre ya lo dicen; deja lugar al nombre */
-        }
-        .scan-card #codeInput,
-        .scan-card #qtyInput {
-          min-height: 52px;
-        }
-        .scan-card #codeInput::placeholder {
-          text-transform: none;
-          letter-spacing: 0;
-          font-size: 15px;
-          font-weight: 650;
-        }
-        .scan-card .scan-grid {
-          grid-template-columns: minmax(0, 1fr) 78px;
-          gap: 8px;
-        }
-        .scan-card .obs-toggle {
-          min-height: 38px;
-          margin: 8px 0 8px;
-        }
-        .scan-card #addButton {
-          min-height: 48px;
-        }
-        .scan-card .message.show {
-          margin-bottom: 8px;
-        }
-      }
       @media (max-width: 380px) {
         .stats {
           gap: 6px;
@@ -1621,6 +1561,577 @@
           transition: none !important;
           animation: none !important;
         }
+      }
+
+      /* =====================================================================
+         REDISEÑO MÓVIL (2026-11): navegación inferior, 4 secciones, ubicación
+         con botones, cantidad con − / +, textos ≥ 12 px y campos de 16 px.
+         ===================================================================== */
+      :root {
+        --sat: env(safe-area-inset-top, 0px);
+        --sab: env(safe-area-inset-bottom, 0px);
+        --nav-h: 64px;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        padding-bottom: 0;
+      }
+      /* Encabezado compacto y fijo arriba */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        padding: calc(var(--sat) + 8px) max(16px, env(safe-area-inset-right)) 10px
+          max(16px, env(safe-area-inset-left));
+        box-shadow: 0 2px 10px rgba(16, 36, 58, 0.18);
+      }
+      .topline {
+        max-width: 724px;
+        margin: 0 auto;
+      }
+      .brand-icon {
+        width: 34px;
+        height: 34px;
+        flex-basis: 34px;
+        border-radius: 10px;
+      }
+      .brand h1 {
+        font-size: 18px;
+      }
+      .connection {
+        height: 32px;
+        padding: 0 10px;
+        font-size: 12px;
+      }
+      .icon-btn {
+        width: 44px;
+        height: 44px;
+        border: 0;
+        background: transparent;
+        margin-right: -6px;
+      }
+      .icon-btn:active {
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .wrap {
+        width: min(100%, 724px);
+        padding: 12px max(14px, env(safe-area-inset-left))
+          calc(var(--nav-h) + var(--sab) + 20px) max(14px, env(safe-area-inset-right));
+      }
+      .card {
+        margin-bottom: 12px;
+        padding: 14px;
+        border-radius: 16px;
+      }
+      /* Textos legibles: nada por debajo de 12 px */
+      label,
+      .helper,
+      .location-hint,
+      .progress-note,
+      .stock-footnote,
+      .footer-note,
+      .lista-pista,
+      .dash-meta,
+      .kpi-sub,
+      .bar-sub,
+      .suggestion small,
+      .empty p,
+      .message,
+      .install-banner p,
+      .update-banner p {
+        font-size: 13px;
+      }
+      .stat span,
+      .kpi-label,
+      .tag,
+      .status-tag,
+      .stock-values span,
+      .stock-group,
+      .obs-count,
+      .app-info dt,
+      .count-pill,
+      .badge,
+      .perf-table {
+        font-size: 12px;
+      }
+      .section-title h2,
+      .list-head h2 {
+        font-size: 16px;
+      }
+      /* Todos los campos a 16 px: el iPhone no hace zoom al tocarlos */
+      .field,
+      .obs-detail,
+      .editor .field {
+        font-size: 16px;
+      }
+      .btn-small {
+        min-height: 44px;
+        font-size: 14px;
+      }
+      .filter-btn {
+        min-height: 40px;
+        padding: 0 14px;
+        font-size: 14px;
+        white-space: nowrap;
+      }
+      .filter-bar {
+        gap: 8px;
+        margin: 0 -14px;
+        padding: 2px 14px 10px;
+        scrollbar-width: none;
+      }
+      .filter-bar::-webkit-scrollbar {
+        display: none;
+      }
+      .refresh-btn {
+        min-height: 44px;
+        padding: 0 12px;
+        font-size: 14px;
+      }
+      .chip {
+        min-height: 40px;
+        padding: 0 14px;
+        font-size: 14px;
+      }
+      .item-code {
+        font-size: 16px;
+      }
+      .item-desc,
+      .stock-desc {
+        font-size: 14px;
+      }
+      .obs-note {
+        font-size: 13px;
+      }
+      .stock-values strong {
+        font-size: 16px;
+      }
+
+      /* ---- Navegación inferior (zona del pulgar) ---- */
+      .tabs {
+        position: fixed;
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 50;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0;
+        margin: 0;
+        padding: 6px max(8px, env(safe-area-inset-left)) calc(var(--sab) + 6px)
+          max(8px, env(safe-area-inset-right));
+        border: 0;
+        border-top: 1px solid var(--line);
+        border-radius: 0;
+        background: var(--surface);
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+        box-shadow: 0 -4px 16px rgba(16, 36, 58, 0.06);
+        transition: transform 0.2s ease;
+      }
+      .tabs > .tab {
+        position: relative;
+        z-index: 0;
+        display: grid;
+        justify-items: center;
+        align-content: center;
+        gap: 3px;
+        min-height: 52px;
+        max-width: 140px;
+        width: 100%;
+        justify-self: center;
+        padding: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+      }
+      .tab svg {
+        width: 24px;
+        height: 24px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .tab[aria-selected="true"] {
+        background: transparent;
+        color: var(--accent-ink);
+      }
+      .tab[aria-selected="true"]::before {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        top: 2px;
+        left: 50%;
+        width: 54px;
+        height: 30px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        transform: translateX(-50%);
+      }
+      .tab .tab-badge {
+        position: absolute;
+        top: 0;
+        left: calc(50% + 6px);
+        min-width: 18px;
+        height: 18px;
+        margin: 0;
+        padding: 0 5px;
+        border-radius: 999px;
+        background: #d97706;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 18px;
+      }
+      /* Con el teclado en pantalla la barra se esconde y no tapa nada. */
+      body.kb .tabs {
+        transform: translateY(110%);
+      }
+      .update-banner {
+        bottom: calc(var(--nav-h) + var(--sab) + 12px);
+      }
+
+      /* ---- Escanear ---- */
+      .loc-seg {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        margin-bottom: 12px;
+        padding: 4px;
+        border: 1px solid var(--card-border);
+        border-radius: 14px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+      .loc-seg button {
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        gap: 1px;
+        min-height: 52px;
+        padding: 4px 2px;
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        color: var(--ink-2);
+        line-height: 1.1;
+        cursor: pointer;
+        transition:
+          background-color 0.15s,
+          color 0.15s;
+      }
+      .loc-seg b {
+        font-size: 17px;
+        font-weight: 850;
+      }
+      .loc-seg span {
+        font-size: 12px;
+        font-weight: 650;
+        color: var(--muted);
+      }
+      .loc-seg button[data-loc-pick="0120"] { --loc: var(--loc-0120); }
+      .loc-seg button[data-loc-pick="0056"] { --loc: var(--loc-0056); }
+      .loc-seg button[data-loc-pick="EX"] { --loc: var(--loc-ex); }
+      .loc-seg button[aria-checked="true"] {
+        background: var(--loc);
+        color: #fff;
+      }
+      .loc-seg button[aria-checked="true"] span {
+        color: rgba(255, 255, 255, 0.88);
+      }
+      .ctx-card {
+        padding: 10px 12px;
+      }
+      .ctx {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+      }
+      .ctx .field {
+        min-height: 48px;
+      }
+      .ctx-sub {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .ring {
+        --p: 0;
+        position: relative;
+        display: grid;
+        place-items: center;
+        flex: none;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: conic-gradient(var(--green) calc(var(--p) * 1%), var(--track) 0);
+      }
+      .ring::before {
+        content: "";
+        position: absolute;
+        inset: 5px;
+        border-radius: 50%;
+        background: var(--surface);
+      }
+      .ring b {
+        position: relative;
+        font-size: 12px;
+        font-weight: 850;
+      }
+      .scan-card {
+        padding: 12px;
+      }
+      .scan-card .loc-banner {
+        display: inline-flex;
+        width: auto;
+        max-width: 100%;
+        min-height: 32px;
+        margin: 0 0 10px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        background: var(--loc-soft);
+        color: var(--loc);
+        cursor: default;
+      }
+      :root[data-theme="dark"] .scan-card .loc-banner {
+        color: var(--ink);
+      }
+      .scan-card .loc-banner::before {
+        content: "";
+        flex: none;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--loc);
+      }
+      .scan-card .loc-banner-label {
+        font-size: 13px;
+        text-transform: none;
+        letter-spacing: 0;
+        opacity: 1;
+        font-weight: 700;
+      }
+      .scan-card .loc-banner-text {
+        font-size: 13px;
+        font-weight: 850;
+        letter-spacing: 0;
+      }
+      .scan-card .loc-banner-change {
+        display: none;
+      }
+      .code-wrap .code-icon {
+        position: absolute;
+        z-index: 1;
+        left: 14px;
+        top: 29px;
+        width: 22px;
+        height: 22px;
+        transform: translateY(-50%);
+        color: var(--muted);
+        pointer-events: none;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      #codeInput {
+        min-height: 58px;
+        padding-left: 46px;
+      }
+      #codeInput::placeholder {
+        text-transform: none;
+        letter-spacing: 0;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .qty-row {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .qty-row > label {
+        margin: 0;
+        font-size: 14px;
+      }
+      .stepper {
+        display: grid;
+        grid-template-columns: 52px minmax(56px, 1fr) 52px;
+        justify-self: end;
+        width: min(100%, 220px);
+        height: 54px;
+        overflow: hidden;
+        border: 1.5px solid var(--line);
+        border-radius: 12px;
+        background: var(--field);
+      }
+      .stepper:focus-within {
+        border-color: var(--focus);
+        box-shadow: 0 0 0 3px var(--focus-ring);
+      }
+      .stepper button {
+        border: 0;
+        background: var(--surface-2);
+        color: var(--accent-ink);
+        font-size: 24px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .stepper button:active {
+        background: var(--accent-soft);
+      }
+      .stepper #qtyInput {
+        min-height: 0;
+        height: 100%;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        background: transparent;
+        -moz-appearance: textfield;
+      }
+      .stepper #qtyInput::-webkit-inner-spin-button,
+      .stepper #qtyInput::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .scan-card .obs-toggle {
+        min-height: 44px;
+        margin: 10px 0 0;
+        font-size: 14px;
+      }
+      .scan-card #addButton {
+        min-height: 56px;
+        margin-top: 12px;
+        font-size: 17px;
+      }
+      .recent-list {
+        display: grid;
+        gap: 8px;
+      }
+      .recent {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 2px 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+        background: var(--surface-2);
+      }
+      .recent .item-code {
+        overflow-wrap: anywhere;
+      }
+      .recent .item-desc {
+        grid-column: 1 / -1;
+        margin: 0;
+      }
+      .recent .item-meta {
+        grid-column: 1 / -1;
+        margin-top: 4px;
+      }
+      .link-btn {
+        min-height: 44px;
+        padding: 0 4px;
+        border: 0;
+        background: none;
+        color: var(--accent-ink);
+        font-size: 14px;
+        font-weight: 750;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .stats-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .stat.warn strong {
+        color: var(--pending-ink);
+      }
+      .lista-scroll {
+        max-height: none !important;
+        overflow: visible;
+        background: none;
+        margin: 0;
+        padding: 0;
+      }
+      .account-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 12px;
+        margin-bottom: 12px;
+      }
+      .account-row dd {
+        flex: 1 1 180px;
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+      /* Con la sesión iniciada, la tarjeta de acceso no ocupa lugar arriba
+         (el "Cerrar sesión" pasa a Panel → Aplicación). */
+      .stats-3 {
+        margin-bottom: 12px;
+      }
+      .stats-3 .stat {
+        padding: 10px 12px;
+        background: var(--surface);
+      }
+      body:has(#appContent:not([hidden])) #authCard {
+        display: none;
+      }
+
+      /* ---- Ajustes por ancho y alto ---- */
+      @media (max-width: 374px) {
+        .brand p {
+          display: none;
+        }
+        .loc-seg b {
+          font-size: 16px;
+        }
+        .stats-3 {
+          grid-template-columns: 1fr 1fr;
+        }
+        .stats-3 .stat:last-child {
+          grid-column: 1 / -1;
+        }
+      }
+      @media (min-width: 428px) {
+        .wrap {
+          padding-left: 18px;
+          padding-right: 18px;
+        }
+        .card {
+          padding: 16px;
+        }
+        .loc-seg button {
+          min-height: 58px;
+        }
+      }
+      @media (max-height: 700px) {
+        .ctx-sub {
+          display: none;
+        }
+      }
+      /* Teclado abierto: Escanear se compacta para que "Agregar" siga visible. */
+      body.kb #viewScan .ctx-card,
+      body.kb #viewScan .loc-banner,
+      body.kb .loc-seg span {
+        display: none;
+      }
+      body.kb .loc-seg button {
+        min-height: 44px;
+      }
+      body.kb .loc-seg,
+      body.kb #viewScan .card {
+        margin-bottom: 8px;
       }
 
       /* ===================== IMPRESIÓN (siempre clara) ===================== */
@@ -1807,100 +2318,53 @@
 
       <div id="appContent" hidden>
         <nav class="tabs" role="tablist" aria-label="Secciones de C-Stock">
-          <button
-            class="tab"
-            id="tabCount"
-            type="button"
-            role="tab"
-            aria-selected="true"
-            aria-controls="viewCount"
-            data-view="count"
-          >
-            Conteo<span class="tab-badge" id="tabQueueBadge" hidden>0</span>
+          <button class="tab" id="tabScan" type="button" role="tab" aria-selected="true" aria-controls="viewScan" data-view="scan">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M11 8v8M15 8v8" /></svg>Escanear
           </button>
-          <button
-            class="tab"
-            id="tabDashboard"
-            type="button"
-            role="tab"
-            aria-selected="false"
-            aria-controls="viewDashboard"
-            data-view="dashboard"
-          >
-            Dashboard
+          <button class="tab" id="tabSession" type="button" role="tab" aria-selected="false" aria-controls="viewSession" data-view="session">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>Sesión<span class="tab-badge" id="tabQueueBadge" hidden>0</span>
+          </button>
+          <button class="tab" id="tabStock" type="button" role="tab" aria-selected="false" aria-controls="viewStock" data-view="stock">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 8-9-5-9 5 9 5 9-5Z" /><path d="M3 8v8l9 5 9-5V8M12 13v8" /></svg>Stock
+          </button>
+          <button class="tab" id="tabDashboard" type="button" role="tab" aria-selected="false" aria-controls="viewDashboard" data-view="dashboard">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18" /><path d="M7 15v2M12 10v7M17 6v11" /></svg>Panel
           </button>
         </nav>
 
-        <!-- ===================== VISTA CONTEO ===================== -->
-        <div id="viewCount" role="tabpanel" aria-labelledby="tabCount">
-          <section
-            class="card location-card"
-            id="locationCard"
-            data-loc="0120"
-            aria-labelledby="locationTitle"
-          >
-            <div class="section-title">
-              <h2 id="locationTitle">
-                <span class="step">1</span>Depósito / ubicación
-              </h2>
-            </div>
-            <select
-              class="field"
-              id="locationSelect"
-              aria-label="Seleccionar depósito"
-            >
-              <option value="0120">0120 · Depósito 0120</option>
-              <option value="0056">0056 · Depósito 0056 real</option>
-              <option value="EX">EX · Exhibición 0056</option>
-            </select>
-            <p class="location-hint">
-              La ubicación elegida se aplica a los próximos artículos.
-            </p>
-          </section>
+        <!-- ===================== VISTA ESCANEAR ===================== -->
+        <div id="viewScan" role="tabpanel" aria-labelledby="tabScan">
+          <!-- Ubicación: 3 botones grandes. El <select> oculto conserva la lógica. -->
+          <div class="loc-seg" id="locationCard" data-loc="0120" role="radiogroup" aria-label="Ubicación donde se cuenta">
+            <button type="button" role="radio" aria-checked="true" data-loc-pick="0120"><b>0120</b><span>Depósito</span></button>
+            <button type="button" role="radio" aria-checked="false" data-loc-pick="0056"><b>0056</b><span>Depósito real</span></button>
+            <button type="button" role="radio" aria-checked="false" data-loc-pick="EX"><b>EX</b><span>Exhibición</span></button>
+          </div>
+          <select id="locationSelect" aria-hidden="true" tabindex="-1" hidden>
+            <option value="0120">0120 · Depósito 0120</option>
+            <option value="0056">0056 · Depósito 0056 real</option>
+            <option value="EX">EX · Exhibición 0056</option>
+          </select>
 
-          <section class="card group-card" aria-labelledby="groupTitle">
-            <div class="section-title">
-              <h2 id="groupTitle">Grupo / título de conteo</h2>
-              <span class="group-active" id="activeGroupTitle"
-                >Todos los grupos</span
-              >
-            </div>
-            <label for="groupSelect">¿Qué grupo estás contando?</label>
-            <select
-              class="field"
-              id="groupSelect"
-              aria-label="Elegir grupo de conteo"
-            >
-              <option value="">Todos los grupos</option>
-            </select>
-            <p class="location-hint" id="groupHint">
-              Elegí un grupo para ver solamente sus artículos. El título también
-              te ayuda a identificar la subfamilia que estás contando.
-            </p>
-          </section>
-
-          <section class="card progress-card" aria-labelledby="progressTitle">
-            <div class="section-title">
-              <h2 id="progressTitle">Avance del conteo</h2>
-              <span class="count-pill" id="progressPercent">0%</span>
-            </div>
-            <div class="stats">
-              <div class="stat">
-                <span>Códigos contados</span
-                ><strong id="progressCodes">0 / 0</strong>
-              </div>
-              <div class="stat">
-                <span>Unidades contado / sistema</span
-                ><strong id="progressUnits">0 / 0</strong>
+          <!-- Grupo + avance en una sola fila -->
+          <section class="card ctx-card" aria-label="Grupo y avance del conteo">
+            <div class="ctx">
+              <select class="field" id="groupSelect" aria-label="Grupo que estás contando">
+                <option value="">Todos los grupos</option>
+              </select>
+              <div class="ring" id="progressRing" role="img" aria-label="Avance del conteo">
+                <b id="progressPercent">0%</b>
               </div>
             </div>
-            <div class="progress-track" aria-label="Progreso de códigos">
-              <div class="progress-fill" id="progressBar"></div>
-            </div>
-            <p class="progress-note" id="progressNote">
-              El avance y los estados usan el total de las tres ubicaciones. El
-              selector solo define dónde se guardan los próximos escaneos.
+            <p class="ctx-sub">
+              <span id="progressCodes">0 / 0</span> códigos ·
+              <span id="progressUnits">0 / 0</span> unidades
             </p>
+            <!-- Se conservan por compatibilidad con la lógica (no se muestran). -->
+            <span id="activeGroupTitle" hidden></span>
+            <span id="groupHint" hidden></span>
+            <span id="progressNote" hidden></span>
+            <span id="progressBar" hidden></span>
           </section>
 
           <section
@@ -1909,12 +2373,8 @@
             data-loc="0120"
             aria-labelledby="scanTitle"
           >
-            <div class="section-title">
-              <h2 id="scanTitle">
-                <span class="step">2</span>Escanear o cargar artículo
-              </h2>
-            </div>
-            <!-- Ubicación activa, grande y con color propio. Tocar para cambiarla. -->
+            <h2 id="scanTitle" hidden>Escanear o cargar artículo</h2>
+            <!-- Ubicación activa con su color. Tocar lleva a los botones de ubicación. -->
             <button
               class="loc-banner"
               id="locBanner"
@@ -1933,10 +2393,11 @@
               role="status"
               aria-live="polite"
             ></div>
-            <div class="scan-grid">
+            <div class="scan-grid-v2">
               <div class="code-wrap">
-                <label for="codeInput">Código o descripción</label>
+                <svg class="code-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M11 8v8M15 8v8M18 8v8" /></svg>
                 <input
+                  aria-label="Código o descripción"
                   class="field"
                   id="codeInput"
                   type="text"
@@ -1948,23 +2409,23 @@
                 />
                 <div class="suggestions" id="suggestions" hidden></div>
               </div>
-              <div>
+              <div class="qty-row">
                 <label for="qtyInput">Cantidad</label>
-                <input
-                  class="field"
-                  id="qtyInput"
-                  type="number"
-                  inputmode="decimal"
-                  min="0.01"
-                  step="any"
-                  value="1"
-                />
+                <div class="stepper">
+                  <button type="button" data-qty-step="-1" aria-label="Restar uno">−</button>
+                  <input
+                    class="field"
+                    id="qtyInput"
+                    type="number"
+                    inputmode="decimal"
+                    min="0.01"
+                    step="any"
+                    value="1"
+                  />
+                  <button type="button" data-qty-step="1" aria-label="Sumar uno">+</button>
+                </div>
               </div>
             </div>
-            <p class="helper">
-              El lector puede enviar <b>Enter</b> al terminar. También podés
-              buscar por descripción y confirmar con Enter o con el botón.
-            </p>
             <button
               class="obs-toggle"
               id="obsToggle"
@@ -2001,20 +2462,33 @@
             </button>
           </section>
 
+          <section class="card" aria-labelledby="recentTitle" id="recentCard" hidden>
+            <div class="list-head" style="margin-bottom: 6px">
+              <h2 id="recentTitle">Últimos escaneos</h2>
+              <button class="link-btn" type="button" data-view="session" id="recentAll">Ver todos →</button>
+            </div>
+            <div class="recent-list" id="recentList"></div>
+          </section>
+        </div>
+
+        <!-- ===================== VISTA SESIÓN ===================== -->
+        <div id="viewSession" role="tabpanel" aria-labelledby="tabSession" hidden>
+          <div class="stats stats-3">
+            <div class="stat card" style="margin: 0">
+              <span>Registros</span><strong id="statRecords">0</strong>
+            </div>
+            <div class="stat card" style="margin: 0">
+              <span>Unidades</span><strong id="statUnits">0</strong>
+            </div>
+            <div class="stat card warn" style="margin: 0">
+              <span>Sin enviar</span><strong id="statPending">0</strong>
+            </div>
+          </div>
+
           <section class="card" aria-labelledby="listTitle">
             <div class="list-head">
-              <h2 id="listTitle">
-                <span class="step">3</span>Artículos de esta sesión
-              </h2>
+              <h2 id="listTitle">Artículos de esta sesión</h2>
               <span class="count-pill" id="itemCount">0 registros</span>
-            </div>
-            <div class="stats">
-              <div class="stat">
-                <span>Registros</span><strong id="statRecords">0</strong>
-              </div>
-              <div class="stat">
-                <span>Unidades</span><strong id="statUnits">0</strong>
-              </div>
             </div>
             <div
               id="queueMessage"
@@ -2056,9 +2530,30 @@
             <p class="lista-pista" id="itemListHint" hidden></p>
           </section>
 
+          <section class="card">
+            <div class="section-title"><h2>Acceso a la planilla</h2></div>
+            <button
+              class="btn btn-outline"
+              id="sheetButton"
+              type="button"
+              style="width: 100%"
+              disabled
+            >
+              ↗ Ver en Google Sheets
+            </button>
+            <p class="helper" style="margin-bottom: 0">
+              Los registros pendientes quedan guardados en este celular hasta
+              enviarse. No borres los datos del navegador antes de confirmar el
+              envío.
+            </p>
+          </section>
+        </div>
+
+        <!-- ===================== VISTA STOCK ===================== -->
+        <div id="viewStock" role="tabpanel" aria-labelledby="tabStock" hidden>
           <section class="card" aria-labelledby="stockListTitle">
             <div class="list-head">
-              <h2 id="stockListTitle">Códigos a buscar / Estado del stock</h2>
+              <h2 id="stockListTitle">Estado del stock</h2>
               <button class="refresh-btn" id="refreshButton" type="button">
                 ↻ Actualizar
               </button>
@@ -2098,27 +2593,6 @@
             </p>
           </section>
 
-          <section class="card">
-            <div class="section-title"><h2>Acceso a la planilla</h2></div>
-            <button
-              class="btn btn-outline"
-              id="sheetButton"
-              type="button"
-              style="width: 100%"
-              disabled
-            >
-              ↗ Ver en Google Sheets
-            </button>
-            <p class="helper" style="margin-bottom: 0">
-              La lista de esta pantalla se conserva en este celular. Abrí la
-              planilla para comprobar los datos guardados en Google Sheets.
-            </p>
-          </section>
-          <p class="footer-note">
-            Los registros pendientes quedan guardados en este celular. El estado
-            del stock se actualiza al sincronizar o al tocar “Actualizar”. No
-            borres los datos del navegador hasta confirmar el envío.
-          </p>
         </div>
 
         <!-- ===================== VISTA DASHBOARD ===================== -->
@@ -2203,6 +2677,11 @@
               <h2 id="dashAppTitle">Aplicación</h2>
             </div>
             <dl class="app-info">
+              <dt>Cuenta</dt>
+              <div class="account-row">
+                <dd id="appAccount">—</dd>
+                <button class="btn btn-outline btn-small" type="button" id="appSignOut">Cerrar sesión</button>
+              </div>
               <dt>Versión</dt>
               <dd id="appVersionText">—</dd>
               <dt>Instalación</dt>
@@ -2523,7 +3002,7 @@
       } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
       window.__cstockReady = true;
-      const APP_VERSION = "2026.11.21-1";
+      const APP_VERSION = "2026.11.22-1";
       const MODULE_START = performance.now();
 
       // ===================== OBSERVACIONES AL CONTAR =====================
@@ -2652,7 +3131,7 @@
         catalogLoadedAt: 0,
         resumen: null,
         dashboardLoading: false,
-        view: "count",
+        view: "scan",
       };
 
       // ===================== MEDICIÓN DE RENDIMIENTO =====================
@@ -3038,6 +3517,9 @@
         );
         $("locationCard").dataset.loc = loc;
         $("scanCard").dataset.loc = loc;
+        document.querySelectorAll("[data-loc-pick]").forEach((b) => {
+          b.setAttribute("aria-checked", String(b.dataset.locPick === loc));
+        });
         if (options.save !== false && STORAGE_KEY) {
           try {
             localStorage.setItem(STORAGE_KEY + LOCATION_SUFFIX, loc);
@@ -3065,18 +3547,12 @@
         setLocation(saved || "0120", { save: false });
       }
 
+      // La ubicación se elige con los 3 botones de arriba: tocar el aviso
+      // "Contando en…" lleva hasta ellos.
       function openLocationPicker() {
-        const select = $("locationSelect");
-        try {
-          if (typeof select.showPicker === "function") {
-            select.showPicker();
-            return;
-          }
-        } catch (error) {
-          // Algunos navegadores no permiten showPicker en <select>.
-        }
         $("locationCard").scrollIntoView({ behavior: "smooth", block: "center" });
-        select.focus({ preventScroll: true });
+        const activo = document.querySelector('[data-loc-pick][aria-checked="true"]');
+        if (activo) activo.focus({ preventScroll: true });
       }
 
       // ============ REFRESCO DIFERIDO DEL CATÁLOGO TRAS SINCRONIZAR ============
@@ -4136,7 +4612,7 @@
         renderGroupSelector();
         renderItems();
         renderQueueState();
-        if (state.view === "count") {
+        if (state.view !== "dashboard") {
           renderProgress();
           renderStockList();
         } else {
@@ -4187,6 +4663,7 @@
           $("progressUnits").textContent = "0 / 0";
           $("progressPercent").textContent = "0%";
           $("progressBar").style.width = "0%";
+          $("progressRing").style.setProperty("--p", "0");
           $("progressNote").textContent =
             "Todavía no hay artículos importados para este grupo. Importá StockDisponible desde el menú de la planilla.";
           return;
@@ -4210,6 +4687,11 @@
           formatNumber(totals.counted) + " / " + formatNumber(totals.system);
         $("progressPercent").textContent = formatNumber(percent) + "%";
         $("progressBar").style.width = percent + "%";
+        $("progressRing").style.setProperty("--p", String(percent));
+        $("progressRing").setAttribute(
+          "aria-label",
+          "Avance del conteo: " + formatNumber(percent) + "%",
+        );
         $("progressNote").textContent =
           (state.activeGroup
             ? "Grupo: " + state.activeGroup + ". "
@@ -4350,7 +4832,15 @@
       // interno. Se mide con las tarjetas reales, así funciona aunque tengan
       // observaciones o un editor abierto.
       const LISTA_VISIBLES = 2;
+      const LISTA_SIN_RECORTE = true;
       function ajustarListaScroll(list, pista, total, selector, unidad = "artículos") {
+        // Rediseño 2026-11: cada lista tiene su propia pantalla y usa el
+        // scroll normal de la página, sin recorte interno.
+        if (LISTA_SIN_RECORTE) {
+          list.style.maxHeight = "";
+          if (pista) pista.hidden = true;
+          return;
+        }
         const tarjetas = list.querySelectorAll(selector);
         if (tarjetas.length <= LISTA_VISIBLES || !list.offsetParent) {
           list.style.maxHeight = "";
@@ -4413,6 +4903,43 @@
           </article>`;
       }
 
+      // "Últimos escaneos" en la pantalla Escanear (los 3 más nuevos).
+      let recentSignature = "";
+      function renderRecent() {
+        const ultimos = state.rows.slice(0, 3);
+        $("recentCard").hidden = !ultimos.length;
+        $("recentAll").textContent =
+          state.rows.length > 3
+            ? "Ver los " + formatNumber(state.rows.length) + " →"
+            : "Ver sesión →";
+        const queuedIds = ultimos.length ? getDerived().queuedIds : new Set();
+        const html = ultimos
+          .map((item) => {
+            const pending = item.status !== "sent" || queuedIds.has(item.id);
+            const obs = obsEtiquetas(item);
+            return (
+              '<div class="recent"><div class="item-code">' +
+              escapeHtml(item.codigo) +
+              '</div><strong class="item-qty">× ' +
+              escapeHtml(formatNumber(item.cantidad)) +
+              '</strong><div class="item-desc">' +
+              escapeHtml(item.descripcion || "Descripción no encontrada en el catálogo") +
+              '</div><div class="item-meta"><span class="tag">' +
+              escapeHtml(item.deposito) +
+              "</span>" +
+              (obs.length ? '<span class="tag obs">⚑ ' + escapeHtml(obs.join(", ")) + "</span>" : "") +
+              '<span class="tag ' + (pending ? "pending" : "sent") + '">' +
+              (pending ? "◷ Sin enviar" : "✓ Enviado") +
+              "</span></div></div>"
+            );
+          })
+          .join("");
+        if (html !== recentSignature) {
+          $("recentList").innerHTML = html;
+          recentSignature = html;
+        }
+      }
+
       function renderItems() {
         const list = $("itemList");
         const totalUnits = state.rows.reduce(
@@ -4424,6 +4951,7 @@
         $("itemCount").textContent =
           state.rows.length +
           (state.rows.length === 1 ? " registro" : " registros");
+        renderRecent();
 
         $("sessionTools").hidden = state.rows.length === 0;
         if (!state.rows.length) {
@@ -4509,6 +5037,7 @@
           state.sending || !navigator.onLine || !auth.currentUser;
         $("tabQueueBadge").hidden = !pendingCount;
         $("tabQueueBadge").textContent = String(pendingCount);
+        $("statPending").textContent = formatNumber(pendingCount);
 
         if (!pendingCount) {
           hideMessage("queueMessage");
@@ -4541,7 +5070,7 @@
       }
 
       function focusCodeInput() {
-        if ($("appContent").hidden || state.view !== "count") return;
+        if ($("appContent").hidden || state.view !== "scan") return;
         window.setTimeout(() => {
           $("codeInput").focus({ preventScroll: true });
           $("codeInput").select();
@@ -5319,19 +5848,29 @@
         }
       }
 
+      const VIEWS = {
+        scan: ["viewScan", "tabScan"],
+        session: ["viewSession", "tabSession"],
+        stock: ["viewStock", "tabStock"],
+        dashboard: ["viewDashboard", "tabDashboard"],
+      };
       function setView(view, options = {}) {
-        state.view = view === "dashboard" ? "dashboard" : "count";
-        $("viewCount").hidden = state.view !== "count";
-        $("viewDashboard").hidden = state.view !== "dashboard";
-        $("tabCount").setAttribute(
-          "aria-selected",
-          String(state.view === "count"),
-        );
-        $("tabDashboard").setAttribute(
-          "aria-selected",
-          String(state.view === "dashboard"),
-        );
+        // "count" era el nombre anterior de la pantalla de escaneo.
+        state.view = VIEWS[view] ? view : "scan";
+        Object.keys(VIEWS).forEach((name) => {
+          $(VIEWS[name][0]).hidden = state.view !== name;
+          $(VIEWS[name][1]).setAttribute(
+            "aria-selected",
+            String(state.view === name),
+          );
+        });
         $("suggestions").hidden = true;
+        if (state.view === "dashboard") {
+          $("appAccount").textContent =
+            (auth.currentUser && auth.currentUser.email) ||
+            $("authIdentity").textContent ||
+            "—";
+        }
         render();
 
         if (options.scrollTo) {
@@ -5764,11 +6303,45 @@
         }
       });
 
-      // Navegación.
-      document.querySelector(".tabs").addEventListener("click", (event) => {
+      // Navegación (barra inferior y el enlace "Ver todos").
+      document.addEventListener("click", (event) => {
         const tab = event.target.closest("[data-view]");
         if (tab) setView(tab.dataset.view);
       });
+
+      // Ubicación: los 3 botones manejan el <select> oculto de siempre.
+      $("locationCard").addEventListener("click", (event) => {
+        const boton = event.target.closest("[data-loc-pick]");
+        if (!boton || $("locationSelect").value === boton.dataset.locPick) return;
+        $("locationSelect").value = boton.dataset.locPick;
+        $("locationSelect").dispatchEvent(new Event("change"));
+      });
+
+      // Cantidad con − / +. No roban el foco al campo de código.
+      document.querySelectorAll("[data-qty-step]").forEach((boton) => {
+        boton.addEventListener("pointerdown", (event) => event.preventDefault());
+        boton.addEventListener("click", () => {
+          const input = $("qtyInput");
+          const actual = Number(String(input.value).replace(",", ".")) || 0;
+          const paso = Number(boton.dataset.qtyStep);
+          const nuevo = actual + paso;
+          input.value = String(paso < 0 ? (nuevo >= 1 ? nuevo : actual > 1 ? 1 : actual) : Math.max(1, nuevo));
+        });
+      });
+
+      $("appSignOut").addEventListener("click", () => $("signOutButton").click());
+
+      // Teclado en pantalla: se detecta por la altura visible (no por el foco,
+      // porque el campo de código queda enfocado para el lector).
+      if (window.visualViewport) {
+        const revisarTeclado = () => {
+          const tapado = window.innerHeight - window.visualViewport.height;
+          const escribiendo = document.activeElement && document.activeElement.matches("input, select, textarea");
+          document.body.classList.toggle("kb", tapado > 150 && !!escribiendo);
+        };
+        window.visualViewport.addEventListener("resize", revisarTeclado);
+        document.addEventListener("focusout", () => window.setTimeout(revisarTeclado, 120));
+      }
 
       // Acciones del dashboard (delegación).
       $("viewDashboard").addEventListener("click", (event) => {
@@ -5778,19 +6351,19 @@
 
         if (action === "filter") {
           state.stockFilter = target.dataset.filter || "all";
-          setView("count", { scrollTo: "stockListTitle" });
+          setView("stock");
         } else if (action === "group") {
           state.activeGroup = target.dataset.group || "";
           persist();
-          setView("count", { scrollTo: "stockListTitle" });
+          setView("stock");
         } else if (action === "location") {
           setLocation(target.dataset.loc, { flash: true });
-          setView("count", { scrollTo: "scanCard" });
+          setView("scan");
           focusCodeInputForced();
         } else if (action === "retry") {
           retryQueue();
         } else if (action === "session") {
-          setView("count", { scrollTo: "listTitle" });
+          setView("session");
         }
       });
 
@@ -5847,15 +6420,6 @@
           runScheduledCatalogRefresh();
         }
       });
-
-      // Altura real de la barra de escaneo fija (celular), para que lo que se
-      // enfoca o se desplaza no quede tapado debajo de ella.
-      if ("ResizeObserver" in window) {
-        new ResizeObserver((entries) => {
-          const h = Math.round(entries[0].contentRect.height + 22);
-          document.documentElement.style.setProperty("--scanbar-h", h + "px");
-        }).observe($("scanCard"));
-      }
 
       setLocation($("locationSelect").value, { save: false });
       setConnection();
