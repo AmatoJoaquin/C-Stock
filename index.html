@@ -2088,6 +2088,196 @@
         display: none;
       }
 
+      /* ---- Fotos de las observaciones ---- */
+      .foto-bar {
+        display: grid;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .foto-thumbs {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .foto-thumbs:empty { display: none; }
+      .foto-botones {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .foto-btn {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 46px;
+        margin: 0;
+        border: 1.5px dashed var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--accent-ink);
+        font-size: 14px;
+        font-weight: 750;
+        cursor: pointer;
+      }
+      .foto-btn:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+      .foto-btn svg, .foto-mini svg {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .foto-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .foto-mini {
+        position: relative;
+        aspect-ratio: 1;
+        overflow: hidden;
+        padding: 0;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface-2);
+        cursor: zoom-in;
+      }
+      .foto-mini img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .foto-mini .quitar {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        display: grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        border: 0;
+        border-radius: 50%;
+        background: rgba(16, 36, 58, 0.78);
+        color: #fff;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      .foto-mini .estado-foto {
+        position: absolute;
+        left: 4px;
+        bottom: 4px;
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: rgba(16, 36, 58, 0.78);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .foto-mini.procesando {
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+        font-size: 12px;
+        cursor: progress;
+      }
+      .foto-mini.add {
+        display: grid;
+        place-items: center;
+        gap: 2px;
+        color: var(--accent-ink);
+        font-size: 12px;
+        font-weight: 750;
+        border-style: dashed;
+        cursor: pointer;
+      }
+      .item-fotos {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
+        margin-top: 9px;
+      }
+      .foto-visor {
+        position: fixed;
+        inset: 0;
+        z-index: 90;
+        display: flex;
+        flex-direction: column;
+        background: rgba(6, 12, 20, 0.96);
+        color: #fff;
+        padding: var(--sat) 0 var(--sab);
+      }
+      .foto-visor[hidden] { display: none; }
+      .foto-visor-top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+      }
+      .foto-visor-top strong {
+        flex: 1;
+        min-width: 0;
+        font-size: 15px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .foto-visor-btn {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.14);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 750;
+        cursor: pointer;
+      }
+      #fotoVisorBorrar { color: #ffb4ab; }
+      .foto-visor-img {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: pan-y pinch-zoom;
+      }
+      .foto-visor-img img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+      .foto-visor-nav {
+        position: absolute;
+        top: 50%;
+        width: 48px;
+        height: 48px;
+        border: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.16);
+        color: #fff;
+        font-size: 26px;
+        transform: translateY(-50%);
+        cursor: pointer;
+      }
+      .foto-visor-nav.prev { left: 10px; }
+      .foto-visor-nav.next { right: 10px; }
+      .foto-visor-pie {
+        margin: 0;
+        padding: 8px 14px 12px;
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 13px;
+        text-align: center;
+      }
+
       /* ---- Revisión de diferencias (cierre del conteo) ---- */
       .rev-card {
         border-left: 4px solid #6b4fbb;
@@ -2565,10 +2755,26 @@
                 autocomplete="off"
                 placeholder="Detalle (opcional): ej. puerta del horno golpeada"
               />
+              <!-- Fotos de la observación (hasta 3). Se comprimen en el celular. -->
+              <div class="foto-bar">
+                <div class="foto-thumbs" id="obsFotos" aria-live="polite"></div>
+                <div class="foto-botones" id="obsFotoBotones">
+                  <label class="foto-btn">
+                    <input type="file" accept="image/*" capture="environment" id="obsFotoCam" class="foto-input" />
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
+                    Sacar foto
+                  </label>
+                  <label class="foto-btn">
+                    <input type="file" accept="image/*" multiple id="obsFotoGal" class="foto-input" />
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="2" /><path d="m21 16-5-5-9 9" /></svg>
+                    Galería
+                  </label>
+                </div>
+              </div>
               <p class="helper" style="margin-bottom: 0">
-                Se aplica solo a este escaneo. Después de agregarlo se limpia
-                para no marcar el siguiente artículo por error. No cambia la
-                cantidad contada.
+                Se aplica solo a este escaneo (hasta 3 fotos). Después de agregarlo
+                se limpia para no marcar el siguiente artículo por error. No
+                cambia la cantidad contada.
               </p>
             </div>
             <button class="btn btn-primary" id="addButton" type="button">
@@ -2869,6 +3075,21 @@
       </div>
     </main>
 
+    <!-- Visor de fotos a pantalla completa -->
+    <div class="foto-visor" id="fotoVisor" role="dialog" aria-modal="true" aria-labelledby="fotoVisorTitulo" hidden>
+      <div class="foto-visor-top">
+        <strong id="fotoVisorTitulo">Foto</strong>
+        <button class="foto-visor-btn" id="fotoVisorBorrar" type="button">Eliminar</button>
+        <button class="foto-visor-btn" id="fotoVisorCerrar" type="button" aria-label="Cerrar foto">✕</button>
+      </div>
+      <div class="foto-visor-img">
+        <button class="foto-visor-nav prev" id="fotoVisorAnt" type="button" aria-label="Foto anterior">‹</button>
+        <img id="fotoVisorImg" alt="" />
+        <button class="foto-visor-nav next" id="fotoVisorSig" type="button" aria-label="Foto siguiente">›</button>
+      </div>
+      <p class="foto-visor-pie" id="fotoVisorPie"></p>
+    </div>
+
     <!-- Aviso de actualización del service worker -->
     <div class="update-banner" id="updateBanner" role="status" hidden>
       <p id="updateText">Hay una nueva versión de C-Stock lista para usar.</p>
@@ -3151,7 +3372,7 @@
       } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
       window.__cstockReady = true;
-      const APP_VERSION = "2026.11.22-3";
+      const APP_VERSION = "2026.11.22-4";
       const MODULE_START = performance.now();
 
       // ===================== OBSERVACIONES AL CONTAR =====================
@@ -3183,7 +3404,8 @@
 
       function renderObsDraft() {
         const n = obsDraft.etiquetas.length;
-        const hayObs = n > 0 || !!obsDraft.detalle;
+        const nFotos = typeof fotosDraft !== "undefined" ? fotosDraft.filter((f) => !f.procesando).length : 0;
+        const hayObs = n > 0 || !!obsDraft.detalle || nFotos > 0;
         document.querySelectorAll("#obsChips [data-obs-chip]").forEach((chip) => {
           chip.setAttribute(
             "aria-pressed",
@@ -3196,9 +3418,11 @@
         }
         const contador = document.getElementById("obsCount");
         contador.hidden = !hayObs;
-        contador.textContent = n
-          ? n + (n === 1 ? " etiqueta" : " etiquetas")
-          : "con detalle";
+        contador.textContent = [
+          n ? n + (n === 1 ? " etiqueta" : " etiquetas") : "",
+          nFotos ? nFotos + (nFotos === 1 ? " foto" : " fotos") : "",
+          !n && !nFotos && obsDraft.detalle ? "con detalle" : "",
+        ].filter(Boolean).join(" · ");
         const boton = document.getElementById("addButton");
         boton.textContent = hayObs ? "＋ Agregar con observación" : "＋ Agregar artículo";
         boton.classList.toggle("with-obs", hayObs);
@@ -3207,6 +3431,10 @@
       function resetObsDraft() {
         obsDraft.etiquetas = [];
         obsDraft.detalle = "";
+        if (typeof fotosDraft !== "undefined" && fotosDraft.length) {
+          fotosDraft.length = 0;
+          renderFotosDraft();
+        }
         renderObsDraft();
       }
 
@@ -3923,6 +4151,424 @@
         }
       }
 
+      // ===================== FOTOS DE LAS OBSERVACIONES =====================
+      // Cada foto se comprime en el celular (JPEG ≤ ~190 KB, lado mayor ≤ 1280 px,
+      // orientación corregida) y se guarda en IndexedDB: no ocupa el espacio
+      // chico del navegador y sobrevive sin conexión. La cola la envía después
+      // del alta del escaneo. El servidor la guarda dentro de la planilla.
+      const FOTOS_MAX = 3;
+      const FOTO_LADO = 1280;
+      const FOTO_BYTES = 190 * 1024;
+      const MINI_LADO = 320;
+      const fotosDraft = [];              // fotos del PRÓXIMO escaneo
+      const thumbCache = new Map();       // fotoId → miniatura (data URL)
+      const miniaturasPedidas = new Set();
+
+      const fotoDB = (() => {
+        let abierta = null;
+        function abrir() {
+          if (abierta) return abierta;
+          abierta = new Promise((ok, mal) => {
+            if (!window.indexedDB) return mal(new Error("Este navegador no permite guardar fotos."));
+            const req = indexedDB.open("cstock-fotos", 1);
+            req.onupgradeneeded = () => {
+              const db = req.result;
+              if (!db.objectStoreNames.contains("fotos")) db.createObjectStore("fotos", { keyPath: "id" });
+            };
+            req.onsuccess = () => ok(req.result);
+            req.onerror = () => mal(req.error || new Error("No se pudo abrir el almacenamiento de fotos."));
+          });
+          return abierta;
+        }
+        async function tx(modo, fn) {
+          const db = await abrir();
+          return new Promise((ok, mal) => {
+            const t = db.transaction("fotos", modo);
+            const req = fn(t.objectStore("fotos"));
+            t.oncomplete = () => ok(req ? req.result : undefined);
+            t.onerror = () => mal(t.error || new Error("Error al guardar la foto."));
+            t.onabort = () => mal(t.error || new Error("No hay espacio para guardar la foto."));
+          });
+        }
+        return {
+          put: (rec) => tx("readwrite", (s) => s.put(rec)),
+          get: (id) => tx("readonly", (s) => s.get(id)),
+          del: (id) => tx("readwrite", (s) => s.delete(id)),
+          todas: () => tx("readonly", (s) => s.getAll()),
+        };
+      })();
+
+      function blobADataUrl(blob) {
+        return new Promise((ok, mal) => {
+          const lector = new FileReader();
+          lector.onload = () => ok(lector.result);
+          lector.onerror = () => mal(lector.error);
+          lector.readAsDataURL(blob);
+        });
+      }
+
+      function canvasABlob(canvas, calidad) {
+        return new Promise((ok, mal) => {
+          canvas.toBlob((b) => (b ? ok(b) : mal(new Error("No se pudo procesar la foto."))), "image/jpeg", calidad);
+        });
+      }
+
+      /** Decodifica la imagen respetando la orientación de la cámara (EXIF). */
+      async function decodificarImagen(file) {
+        if ("createImageBitmap" in window) {
+          try {
+            const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+            return { fuente: bmp, w: bmp.width, h: bmp.height, liberar: () => bmp.close && bmp.close() };
+          } catch (error) {
+            // Algunos navegadores no aceptan opciones: se usa <img>.
+          }
+        }
+        const url = URL.createObjectURL(file);
+        try {
+          const img = new Image();
+          img.decoding = "async";
+          img.src = url;
+          await img.decode();
+          return { fuente: img, w: img.naturalWidth, h: img.naturalHeight, liberar: () => URL.revokeObjectURL(url) };
+        } catch (error) {
+          URL.revokeObjectURL(url);
+          throw new Error("No se pudo leer la imagen (formato no compatible). Probá sacarla con la cámara.");
+        }
+      }
+
+      function dibujar(fuente, w, h, lado) {
+        const escala = Math.min(1, lado / Math.max(w, h));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(w * escala));
+        canvas.height = Math.max(1, Math.round(h * escala));
+        const ctx = canvas.getContext("2d", { alpha: false });
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(fuente, 0, 0, canvas.width, canvas.height);
+        return canvas;
+      }
+
+      /** Comprime: lado mayor ≤ 1280 px y ≤ ~190 KB, bajando calidad y tamaño de a poco. */
+      async function comprimirFoto(file) {
+        if (file.type && !/^image\//.test(file.type)) throw new Error("El archivo elegido no es una imagen.");
+        const img = await decodificarImagen(file);
+        try {
+          let lado = FOTO_LADO, calidad = 0.82, canvas, blob;
+          for (let intento = 0; intento < 8; intento++) {
+            canvas = dibujar(img.fuente, img.w, img.h, lado);
+            blob = await canvasABlob(canvas, calidad);
+            if (blob.size <= FOTO_BYTES) break;
+            if (calidad > 0.62) calidad -= 0.1;
+            else lado = Math.round(lado * 0.82);
+          }
+          // Miniatura: entra siempre en una celda de la planilla (≤ ~30 KB).
+          const lienzoMini = dibujar(canvas, canvas.width, canvas.height, MINI_LADO);
+          let mini = await canvasABlob(lienzoMini, 0.7);
+          for (let q = 0.6; mini.size > 30 * 1024 && q >= 0.3; q -= 0.1) mini = await canvasABlob(lienzoMini, q);
+          return {
+            data: await blobADataUrl(blob),
+            thumb: await blobADataUrl(mini),
+            w: canvas.width,
+            h: canvas.height,
+            bytes: blob.size,
+          };
+        } finally {
+          img.liberar();
+        }
+      }
+
+      function iconoFoto() {
+        return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+      }
+
+      // ---------- Fotos del próximo escaneo ----------
+      function renderFotosDraft() {
+        $("obsFotos").innerHTML = fotosDraft
+          .map((f, i) =>
+            f.procesando
+              ? '<div class="foto-mini procesando" aria-label="Procesando foto">Procesando…</div>'
+              : '<div class="foto-mini"><button type="button" style="all:unset;display:block;width:100%;height:100%;cursor:zoom-in" data-draft-ver="' + i + '" aria-label="Ver foto ' + (i + 1) + '"><img alt="" src="' + f.thumb + '"></button>' +
+                '<button class="quitar" type="button" data-draft-quitar="' + i + '" aria-label="Quitar foto ' + (i + 1) + '">✕</button></div>',
+          )
+          .join("");
+        $("obsFotoBotones").hidden = fotosDraft.length >= FOTOS_MAX;
+        renderObsDraft();
+      }
+
+      async function agregarFotosDraft(files) {
+        const lista = Array.from(files || []).slice(0, FOTOS_MAX - fotosDraft.length);
+        if (!lista.length) {
+          if (files && files.length) showMessage("mainMessage", "Cada observación admite hasta " + FOTOS_MAX + " fotos.", "warning");
+          return;
+        }
+        for (const file of lista) {
+          const lugar = { id: makeId(), procesando: true };
+          fotosDraft.push(lugar);
+          renderFotosDraft();
+          try {
+            Object.assign(lugar, await comprimirFoto(file), { procesando: false });
+            thumbCache.set(lugar.id, lugar.thumb);
+          } catch (error) {
+            fotosDraft.splice(fotosDraft.indexOf(lugar), 1);
+            showMessage("mainMessage", error.message || "No se pudo agregar la foto.", "error");
+          }
+          renderFotosDraft();
+        }
+      }
+
+      /** Guarda en IndexedDB las fotos del escaneo recién agregado y las encola. */
+      async function guardarFotosDeEscaneo(item, fotos) {
+        for (const f of fotos) {
+          await fotoDB.put({ id: f.id, itemId: item.id, data: f.data, thumb: f.thumb, w: f.w, h: f.h, bytes: f.bytes, enviada: false, creada: Date.now() });
+        }
+      }
+
+      function encolarFoto(item, fotoId) {
+        state.queue.push({ id: item.id, action: "foto", fotoId, codigo: item.codigo, deposito: item.deposito, t: Date.now() });
+      }
+
+      function fotoPendiente(fotoId) {
+        return state.queue.some((op) => op.action === "foto" && op.fotoId === fotoId);
+      }
+
+      /** Quita de la cola las fotos sin enviar de un escaneo (no toca la operación en curso). */
+      function quitarFotosEncoladas(itemId) {
+        const enCurso = state.sending ? state.queue[0] : null;
+        const quitadas = state.queue.filter((op) => op !== enCurso && op.action === "foto" && op.id === itemId);
+        state.queue = state.queue.filter((op) => !quitadas.includes(op));
+        quitadas.forEach((op) => fotoDB.del(op.fotoId).catch(() => {}));
+      }
+
+      /** Envía una operación de foto de la cola. Devuelve "esperar" si todavía no se puede. */
+      async function enviarOpFoto(op) {
+        let payload;
+        let rec = null;
+        if (op.action === "foto") {
+          rec = await fotoDB.get(op.fotoId).catch(() => null);
+          if (!rec || !rec.data) {
+            // Recién agregada: la foto se está terminando de guardar.
+            if (Date.now() - (op.t || 0) < 120000) return "esperar";
+            return "descartada";
+          }
+          payload = { action: "foto", op: "subir", requestId: op.id, fotoId: op.fotoId, codigo: op.codigo, deposito: op.deposito, data: rec.data, thumb: rec.thumb, ancho: rec.w, alto: rec.h };
+        } else {
+          payload = { action: "foto", op: "borrar", fotoId: op.fotoId };
+        }
+        try {
+          await postToAppsScript(payload);
+          if (rec) {
+            rec.enviada = true;
+            await fotoDB.put(rec).catch(() => {});
+          }
+          return "ok";
+        } catch (error) {
+          if (!error.serverRejected) throw error; // sin red: se reintenta después
+          // El servidor la rechazó (por ejemplo, más de 3 fotos): no se traba la cola.
+          showMessage("mainMessage", "Una foto no se pudo guardar: " + error.message, "warning");
+          return "descartada";
+        }
+      }
+
+      // ---------- Fotos en la lista de la sesión ----------
+      function fotosItemHtml(item) {
+        const ids = Array.isArray(item.fotos) ? item.fotos : [];
+        const tieneObs = obsEtiquetas(item).length || item.detalle;
+        if (!ids.length && !tieneObs) return "";
+        const id = escapeHtml(item.id);
+        const minis = ids
+          .map((fid, i) => {
+            const src = thumbCache.get(fid);
+            return '<button class="foto-mini" type="button" data-action="foto-ver" data-id="' + id + '" data-foto="' + escapeHtml(fid) +
+              '" aria-label="Ver foto ' + (i + 1) + ' de ' + escapeHtml(item.codigo) + '">' +
+              (src ? '<img alt="" src="' + src + '">' : iconoFoto()) +
+              (fotoPendiente(fid) ? '<span class="estado-foto">◷ sin enviar</span>' : "") + "</button>";
+          })
+          .join("");
+        const agregar = ids.length < FOTOS_MAX
+          ? '<label class="foto-mini add">' + iconoFoto() + "Foto" +
+            '<input type="file" accept="image/*" class="foto-input" data-foto-add="' + id + '" aria-label="Agregar foto a ' + escapeHtml(item.codigo) + '"></label>'
+          : "";
+        return '<div class="item-fotos">' + minis + agregar + "</div>";
+      }
+
+      /** Carga en memoria las miniaturas guardadas de los escaneos de la sesión. */
+      function pedirMiniaturas() {
+        const faltan = [];
+        state.rows.forEach((r) => (r.fotos || []).forEach((fid) => {
+          if (!thumbCache.has(fid) && !miniaturasPedidas.has(fid)) faltan.push(fid);
+        }));
+        if (!faltan.length) return;
+        faltan.forEach((fid) => miniaturasPedidas.add(fid));
+        Promise.all(faltan.map((fid) => fotoDB.get(fid).then((rec) => { if (rec && rec.thumb) thumbCache.set(fid, rec.thumb); }).catch(() => {})))
+          .then(() => renderItems());
+      }
+
+      async function agregarFotosAItem(itemId, files) {
+        const item = state.rows.find((r) => r.id === itemId);
+        if (!item) return;
+        item.fotos = Array.isArray(item.fotos) ? item.fotos : [];
+        const lista = Array.from(files || []).slice(0, FOTOS_MAX - item.fotos.length);
+        for (const file of lista) {
+          try {
+            const f = await comprimirFoto(file);
+            const fotoId = makeId();
+            await fotoDB.put({ id: fotoId, itemId, data: f.data, thumb: f.thumb, w: f.w, h: f.h, bytes: f.bytes, enviada: false, creada: Date.now() });
+            thumbCache.set(fotoId, f.thumb);
+            item.fotos.push(fotoId);
+            encolarFoto(item, fotoId);
+          } catch (error) {
+            showMessage("queueMessage", error.message || "No se pudo agregar la foto.", "error");
+          }
+        }
+        persist();
+        render();
+        retryQueue();
+      }
+
+      function eliminarFotoDeItem(itemId, fotoId) {
+        const item = state.rows.find((r) => r.id === itemId);
+        if (!item) return;
+        item.fotos = (item.fotos || []).filter((f) => f !== fotoId);
+        const enCurso = state.sending ? state.queue[0] : null;
+        const op = state.queue.find((o) => o.action === "foto" && o.fotoId === fotoId);
+        if (op && op !== enCurso) {
+          state.queue = state.queue.filter((o) => o !== op); // nunca llegó al servidor
+        } else {
+          state.queue.push({ id: itemId, action: "fotoBorrar", fotoId, t: Date.now() });
+        }
+        fotoDB.del(fotoId).catch(() => {});
+        thumbCache.delete(fotoId);
+        persist();
+        render();
+        retryQueue();
+      }
+
+      /** Borra del celular las fotos de escaneos que ya no están en la sesión. */
+      async function purgarFotosHuerfanas() {
+        try {
+          const vivas = new Set();
+          state.rows.forEach((r) => (r.fotos || []).forEach((f) => vivas.add(f)));
+          state.queue.forEach((o) => o.fotoId && vivas.add(o.fotoId));
+          const todas = await fotoDB.todas();
+          todas.filter((rec) => !vivas.has(rec.id) && Date.now() - (rec.creada || 0) > 3600000)
+            .forEach((rec) => fotoDB.del(rec.id).catch(() => {}));
+        } catch (error) {
+          // No crítico.
+        }
+      }
+
+      // ---------- Visor ----------
+      const visor = { lista: [], i: 0, itemId: null, draft: false };
+
+      async function abrirVisor(lista, i, opciones) {
+        visor.lista = lista;
+        visor.i = i;
+        visor.itemId = (opciones && opciones.itemId) || null;
+        visor.draft = !!(opciones && opciones.draft);
+        visor.titulo = (opciones && opciones.titulo) || "Foto";
+        $("fotoVisor").hidden = false;
+        document.body.style.overflow = "hidden";
+        await mostrarFotoVisor();
+        $("fotoVisorCerrar").focus();
+      }
+
+      async function mostrarFotoVisor() {
+        const f = visor.lista[visor.i];
+        if (!f) return cerrarVisor();
+        $("fotoVisorTitulo").textContent = visor.titulo + " · " + (visor.i + 1) + " de " + visor.lista.length;
+        $("fotoVisorAnt").hidden = $("fotoVisorSig").hidden = visor.lista.length < 2;
+        $("fotoVisorImg").src = f.thumb || thumbCache.get(f.id) || "";
+        let pie = "";
+        if (f.data) {
+          $("fotoVisorImg").src = f.data;
+        } else {
+          const rec = await fotoDB.get(f.id).catch(() => null);
+          if (rec && rec.data && visor.lista[visor.i] === f) $("fotoVisorImg").src = rec.data;
+          if (rec) pie = (rec.w ? rec.w + "×" + rec.h + " px · " : "") + Math.round((rec.bytes || 0) / 1024) + " KB · " +
+            (fotoPendiente(f.id) ? "pendiente de envío" : rec.enviada ? "guardada en la planilla" : "");
+        }
+        $("fotoVisorPie").textContent = visor.draft ? "Se envía al agregar el artículo." : pie;
+      }
+
+      function cerrarVisor() {
+        $("fotoVisor").hidden = true;
+        $("fotoVisorImg").removeAttribute("src");
+        document.body.style.overflow = "";
+      }
+
+      $("fotoVisorCerrar").addEventListener("click", cerrarVisor);
+      $("fotoVisorAnt").addEventListener("click", () => { visor.i = (visor.i - 1 + visor.lista.length) % visor.lista.length; mostrarFotoVisor(); });
+      $("fotoVisorSig").addEventListener("click", () => { visor.i = (visor.i + 1) % visor.lista.length; mostrarFotoVisor(); });
+      $("fotoVisorBorrar").addEventListener("click", () => {
+        const f = visor.lista[visor.i];
+        if (!f || !window.confirm("¿Eliminar esta foto?")) return;
+        if (visor.draft) {
+          const k = fotosDraft.findIndex((x) => x.id === f.id);
+          if (k >= 0) fotosDraft.splice(k, 1);
+          renderFotosDraft();
+        } else if (visor.itemId) {
+          eliminarFotoDeItem(visor.itemId, f.id);
+        }
+        visor.lista.splice(visor.i, 1);
+        if (!visor.lista.length) return cerrarVisor();
+        visor.i = Math.min(visor.i, visor.lista.length - 1);
+        mostrarFotoVisor();
+      });
+      document.addEventListener("keydown", (event) => {
+        if ($("fotoVisor").hidden) return;
+        if (event.key === "Escape") cerrarVisor();
+        if (event.key === "ArrowLeft") $("fotoVisorAnt").click();
+        if (event.key === "ArrowRight") $("fotoVisorSig").click();
+      });
+      // Deslizar para pasar de foto.
+      (() => {
+        let x0 = null;
+        $("fotoVisor").addEventListener("touchstart", (e) => { x0 = e.touches.length === 1 ? e.touches[0].clientX : null; }, { passive: true });
+        $("fotoVisor").addEventListener("touchend", (e) => {
+          if (x0 === null || visor.lista.length < 2) return;
+          const dx = e.changedTouches[0].clientX - x0;
+          if (Math.abs(dx) > 60) (dx < 0 ? $("fotoVisorSig") : $("fotoVisorAnt")).click();
+          x0 = null;
+        }, { passive: true });
+      })();
+
+      // ---------- Eventos ----------
+      ["obsFotoCam", "obsFotoGal"].forEach((id) => {
+        $(id).addEventListener("change", (event) => {
+          const files = event.target.files;
+          agregarFotosDraft(files).finally(() => { event.target.value = ""; });
+        });
+      });
+      $("obsFotos").addEventListener("click", (event) => {
+        const quitar = event.target.closest("[data-draft-quitar]");
+        if (quitar) {
+          fotosDraft.splice(Number(quitar.dataset.draftQuitar), 1);
+          renderFotosDraft();
+          return;
+        }
+        const ver = event.target.closest("[data-draft-ver]");
+        if (ver) {
+          const listas = fotosDraft.filter((f) => !f.procesando);
+          abrirVisor(listas.slice(), Number(ver.dataset.draftVer), { draft: true, titulo: "Foto del próximo escaneo" });
+        }
+      });
+      $("itemList").addEventListener("click", (event) => {
+        const ver = event.target.closest('[data-action="foto-ver"]');
+        if (!ver) return;
+        event.stopPropagation();
+        const item = state.rows.find((r) => r.id === ver.dataset.id);
+        if (!item) return;
+        const lista = (item.fotos || []).map((fid) => ({ id: fid, thumb: thumbCache.get(fid) }));
+        abrirVisor(lista, Math.max(0, (item.fotos || []).indexOf(ver.dataset.foto)), { itemId: item.id, titulo: item.codigo });
+      }, true);
+      $("itemList").addEventListener("change", (event) => {
+        const input = event.target.closest("[data-foto-add]");
+        if (!input) return;
+        agregarFotosAItem(input.dataset.fotoAdd, input.files).finally(() => { input.value = ""; });
+      });
+
       // ===================== CIERRE DEL CONTEO Y REVISIÓN =====================
       // Solo ADMIN / SUPERVISOR. Requiere conexión: cada decisión se guarda
       // en el servidor en el momento (no pasa por la cola sin conexión).
@@ -4410,6 +5056,14 @@
           return;
         }
 
+        if (fotosDraft.some((f) => f.procesando)) {
+          showMessage("mainMessage", "Esperá un segundo: la foto se está procesando.", "info");
+          return;
+        }
+        const fotosEscaneo = fotosDraft.slice(0, FOTOS_MAX);
+        if (fotosEscaneo.length && !obsDraft.etiquetas.length && !obsDraft.detalle) {
+          obsDraft.detalle = "Foto adjunta"; // la foto viaja con una observación
+        }
         const id = makeId();
         const location = $("locationSelect").value;
         const item = {
@@ -4428,6 +5082,7 @@
           serverUnits: 0,
           observacion: obsDraft.etiquetas.slice(),
           detalle: obsDraft.detalle,
+          fotos: fotosEscaneo.map((f) => f.id),
         };
 
         const payloadAlta = {
@@ -4444,7 +5099,13 @@
 
         state.rows.unshift(item);
         state.queue.push({ id, action: "add", payload: payloadAlta });
+        fotosEscaneo.forEach((f) => encolarFoto(item, f.id));
         state.lastLocalChangeAt = Date.now();
+        if (fotosEscaneo.length) {
+          guardarFotosDeEscaneo(item, fotosEscaneo)
+            .then(() => retryQueue())
+            .catch((error) => showMessage("mainMessage", "No se pudieron guardar las fotos en el celular: " + error.message, "error"));
+        }
 
         persist();
         render();
@@ -4608,6 +5269,20 @@
           while (state.queue.length && navigator.onLine && auth.currentUser) {
             const op = state.queue[0];
             const item = state.rows.find((row) => row.id === op.id);
+
+            if (op.action === "foto" || op.action === "fotoBorrar") {
+              const opHandleFoto = perfStart("sync." + op.action);
+              const resultadoFoto = await enviarOpFoto(op);
+              if (resultadoFoto === "esperar") break;
+              perfEnd(opHandleFoto, { serverMs: null });
+              state.queue.shift();
+              processed++;
+              state.lastSyncAt = new Date().toISOString();
+              persist();
+              render();
+              continue;
+            }
+
             let payload;
 
             if (op.action === "add") {
@@ -4732,6 +5407,7 @@
             navigator.onLine
           ) {
             if (processed) {
+              purgarFotosHuerfanas();
               const texto = "Sincronizado con la planilla.";
               showMessage("mainMessage", texto, "success");
               window.setTimeout(() => {
@@ -4808,6 +5484,7 @@
 
         const item = state.rows[index];
         ensureRowSnapshot(item);
+        quitarFotosEncoladas(id); // fotos que todavía no se enviaron
         const hasQueuedAdd = state.queue.some(
           (op) => op.id === id && op.action === "add",
         );
@@ -5317,6 +5994,7 @@
               <span class="tag ${pending ? "pending" : "sent"}">${pending ? "◷ Pendiente de envío" : "✓ Enviado"}</span>
             </div>
             ${item.detalle ? `<div class="obs-note">${escapeHtml(item.detalle)}</div>` : ""}
+            ${fotosItemHtml(item)}
             <div class="item-actions">
               <button class="btn btn-secondary btn-small" type="button" data-action="edit" data-id="${id}">✎ Editar</button>
               <button class="btn btn-danger btn-small" type="button" data-action="delete" data-id="${id}">⌫ Eliminar</button>
@@ -5362,6 +6040,7 @@
               escapeHtml(item.deposito) +
               "</span>" +
               (obs.length ? '<span class="tag obs">⚑ ' + escapeHtml(obs.join(", ")) + "</span>" : "") +
+              ((item.fotos || []).length ? '<span class="tag">📷 ' + item.fotos.length + "</span>" : "") +
               '<span class="tag ' + (pending ? "pending" : "sent") + '">' +
               (pending ? "◷ Sin enviar" : "✓ Enviado") +
               "</span></div></div>"
@@ -5376,6 +6055,7 @@
 
       function renderItems() {
         const list = $("itemList");
+        pedirMiniaturas();
         const totalUnits = state.rows.reduce(
           (sum, item) => sum + (Number(item.cantidad) || 0),
           0,
