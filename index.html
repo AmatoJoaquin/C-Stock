@@ -2088,6 +2088,120 @@
         display: none;
       }
 
+      /* ---- Revisión de diferencias (cierre del conteo) ---- */
+      .rev-card {
+        border-left: 4px solid #6b4fbb;
+      }
+      .rev-back {
+        min-height: 44px;
+        margin: 0 0 8px;
+        padding: 0 4px;
+        border: 0;
+        background: none;
+        color: var(--accent-ink);
+        font-size: 15px;
+        font-weight: 750;
+        cursor: pointer;
+      }
+      .rev-list {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .rev-item {
+        padding: 14px;
+        border: 1px solid var(--card-border);
+        border-left: 4px solid var(--amber-ink);
+        border-radius: 16px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+      .rev-item.done-ok { border-left-color: var(--c-ok); }
+      .rev-item.done-confirm { border-left-color: var(--c-pending); }
+      .rev-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .rev-top .item-code { font-size: 17px; }
+      .rev-dif {
+        flex: none;
+        font-size: 20px;
+        font-weight: 900;
+        font-variant-numeric: tabular-nums;
+      }
+      .rev-dif.neg { color: var(--red); }
+      .rev-dif.pos { color: var(--orange-ink); }
+      .rev-dif.zero { color: var(--green-ink); }
+      .rev-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 4px;
+        margin-top: 10px;
+        padding: 8px;
+        border-radius: 10px;
+        background: var(--surface-2);
+        text-align: center;
+      }
+      .rev-grid span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .rev-grid b {
+        font-size: 16px;
+        font-variant-numeric: tabular-nums;
+      }
+      .rev-hint {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .rev-hint.dup { color: var(--pending-ink); font-weight: 700; }
+      .rev-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .rev-actions .btn { width: 100%; min-height: 48px; font-size: 14px; }
+      .rev-edit {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 12px;
+        background: var(--surface-2);
+      }
+      .rev-edit-row {
+        display: grid;
+        grid-template-columns: 64px minmax(0, 1fr);
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .rev-edit-row label { margin: 0; font-size: 14px; }
+      .rev-edit .stepper { width: 100%; justify-self: stretch; }
+      .rev-edit .field { min-height: 46px; }
+      .rev-total {
+        margin: 2px 0 8px;
+        font-size: 14px;
+        font-weight: 750;
+      }
+      .rev-result {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        font-size: 14px;
+      }
+      .rev-result b { font-weight: 850; }
+      .rev-close { border-top: 4px solid #6b4fbb; }
+      .rev-dif-inline { font-size: 14px; }
+      .rev-close .btn-primary { background: #6b4fbb; box-shadow: none; }
+      .rev-close .btn-primary:disabled { background: var(--surface-3); color: var(--muted); opacity: 1; }
+
       /* ---- Ajustes por ancho y alto ---- */
       @media (max-width: 374px) {
         .brand p {
@@ -2633,6 +2747,18 @@
             ></div>
           </section>
 
+          <!-- Cierre del conteo (solo ADMIN / SUPERVISOR) -->
+          <section class="card rev-card" id="revCard" aria-labelledby="revCardTitle" hidden>
+            <div class="section-title">
+              <h2 id="revCardTitle">Cierre del conteo</h2>
+              <span class="badge badge-local" id="revCardBadge">Abierto</span>
+            </div>
+            <p class="dash-meta" id="revCardText" style="margin-top: 0">
+              Al cerrar, revisás uno por uno los códigos con diferencia y los corregís si hace falta.
+            </p>
+            <button class="btn btn-primary" id="revOpen" type="button">Cerrar conteo y revisar diferencias</button>
+          </section>
+
           <div class="kpi-grid" id="dashKpis"></div>
 
           <section class="card" aria-labelledby="dashProgressTitle">
@@ -2715,6 +2841,29 @@
               </p>
               <div class="table-scroll" id="dashPerf"></div>
             </details>
+          </section>
+        </div>
+
+        <!-- ===================== VISTA REVISIÓN DE DIFERENCIAS ===================== -->
+        <div id="viewReview" role="tabpanel" aria-labelledby="revTitle" hidden>
+          <button class="rev-back" id="revBack" type="button">← Volver al Panel</button>
+          <section class="card rev-head">
+            <div class="section-title" style="margin-bottom: 6px">
+              <h2 id="revTitle">Revisión de diferencias</h2>
+              <span class="badge badge-provisional" id="revBadge">En revisión</span>
+            </div>
+            <p class="dash-meta" id="revSub" style="margin: 0"></p>
+            <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="revBar"></div></div>
+            <p class="progress-note" id="revProgress"></p>
+            <div id="revMessage" class="message" role="status" aria-live="polite" style="margin: 10px 0 0"></div>
+          </section>
+          <div class="rev-list" id="revList"></div>
+          <section class="card rev-close" id="revCloseCard">
+            <p class="dash-meta" id="revCloseText" style="margin-top: 0"></p>
+            <button class="btn btn-outline" id="revConfirmAll" type="button" style="width: 100%; margin-bottom: 8px" hidden>
+              ✓ Confirmar las restantes como diferencias reales
+            </button>
+            <button class="btn btn-primary" id="revClose" type="button" disabled>Cerrar conteo</button>
           </section>
         </div>
       </div>
@@ -3002,7 +3151,7 @@
       } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
       window.__cstockReady = true;
-      const APP_VERSION = "2026.11.22-2";
+      const APP_VERSION = "2026.11.22-3";
       const MODULE_START = performance.now();
 
       // ===================== OBSERVACIONES AL CONTAR =====================
@@ -3769,8 +3918,293 @@
           const nombre = data.usuario.nombre || data.usuario.email || "Usuario";
           $("authIdentity").textContent =
             nombre + " · " + (data.usuario.rol || "");
+          state.rol = data.usuario.rol || "";
+          renderRevCard();
         }
       }
+
+      // ===================== CIERRE DEL CONTEO Y REVISIÓN =====================
+      // Solo ADMIN / SUPERVISOR. Requiere conexión: cada decisión se guarda
+      // en el servidor en el momento (no pasa por la cola sin conexión).
+      const rev = { data: null, grupo: "", editando: null, cargando: false };
+      const puedeRevisar = () => state.rol === "ADMIN" || state.rol === "SUPERVISOR";
+
+      function revGrupo() {
+        return $("dashGroupSelect").value || state.activeGroup || "";
+      }
+
+      function renderRevCard() {
+        const card = $("revCard");
+        if (!card) return;
+        card.hidden = !puedeRevisar();
+        if (card.hidden) return;
+        const grupo = revGrupo();
+        const d = rev.data && rev.data.grupo === grupo ? rev.data : null;
+        const boton = $("revOpen");
+        const badge = $("revCardBadge");
+        if (!grupo) {
+          badge.textContent = "Elegí un grupo";
+          badge.className = "badge badge-local";
+          $("revCardText").textContent = "Elegí un grupo en Alcance para cerrar su conteo y revisar las diferencias código por código.";
+          boton.disabled = true;
+          boton.textContent = "Cerrar conteo y revisar diferencias";
+          return;
+        }
+        boton.disabled = false;
+        if (d && d.estado === "revision") {
+          badge.textContent = "En revisión";
+          badge.className = "badge badge-provisional";
+          $("revCardText").textContent = "Revisión de " + grupo + " en curso: " +
+            (d.items.length - d.pendientes) + " de " + d.items.length + " código(s) revisados.";
+          boton.textContent = "Continuar revisión";
+        } else if (d && d.estado === "cerrado") {
+          badge.textContent = "Cerrado";
+          badge.className = "badge badge-final";
+          $("revCardText").textContent = "El conteo de " + grupo + " se cerró el " + (d.cierre || "") + ". Podés ver el detalle de la revisión.";
+          boton.textContent = "Ver revisión";
+        } else {
+          badge.textContent = "Abierto";
+          badge.className = "badge badge-local";
+          $("revCardText").textContent = "Al cerrar el conteo de " + grupo + " se arma la lista de códigos con diferencia para revisarlos uno por uno y corregirlos si hace falta.";
+          boton.textContent = "Cerrar conteo y revisar diferencias";
+        }
+      }
+
+      async function revLlamar(op, extra) {
+        const data = await postToAppsScript(Object.assign({ action: "revision", op, grupo: rev.grupo }, extra || {}));
+        if (!data || data.ok !== true) throw new Error((data && data.error) || "No se pudo completar la revisión.");
+        rev.data = data;
+        return data;
+      }
+
+      async function abrirRevision() {
+        const grupo = revGrupo();
+        if (!grupo || !puedeRevisar()) return;
+        if (!navigator.onLine) {
+          showMessage("dashMessage", "La revisión necesita conexión. Probá de nuevo cuando haya señal.", "warning");
+          return;
+        }
+        if (state.queue.length) {
+          showMessage("dashMessage", "Hay escaneos sin enviar. Enviálos primero (Sesión → Reintentar envío) para revisar con los números completos.", "warning");
+          return;
+        }
+        rev.grupo = grupo;
+        const boton = $("revOpen");
+        boton.disabled = true;
+        const textoAntes = boton.textContent;
+        boton.textContent = "Cargando…";
+        try {
+          let data = await revLlamar("listar");
+          if (data.estado !== "revision" && data.estado !== "cerrado") {
+            const ok = window.confirm(
+              "¿Cerrar el conteo de " + grupo + "?\n\nSe arma la lista de códigos con faltante o sobrante para revisarlos. " +
+              "Mientras tanto se puede seguir escaneando.",
+            );
+            if (!ok) return;
+            data = await revLlamar("iniciar");
+          }
+          rev.editando = null;
+          setView("review");
+          renderRevision();
+        } catch (error) {
+          showMessage("dashMessage", "No se pudo abrir la revisión: " + error.message, "error");
+        } finally {
+          boton.textContent = textoAntes;
+          boton.disabled = false;
+          renderRevCard();
+        }
+      }
+
+      function revDifHtml(valor) {
+        const n = Number(valor) || 0;
+        const cls = n < 0 ? "neg" : n > 0 ? "pos" : "zero";
+        const texto = n > 0 ? "+" + formatNumber(n) : n < 0 ? "−" + formatNumber(-n) : "0";
+        return '<span class="rev-dif ' + cls + '">' + texto + "</span>";
+      }
+
+      function revItemHtml(it) {
+        const total = it.c120 + it.c56 + it.cex;
+        const dif = total - it.sistema;
+        const hecho = it.resultado !== "Pendiente";
+        const cerrado = rev.data.estado === "cerrado";
+        const editando = rev.editando === it.codigo && !cerrado;
+        const clase = hecho ? (it.resultado === "Corregido" ? "done-ok" : "done-confirm") : "";
+        const quienes = it.quienes && it.quienes.length ? it.quienes.join(", ") : "";
+        const dup = it.escaneos > 1 && it.quienes && it.quienes.length > 1;
+        let html = '<article class="rev-item ' + clase + '" data-rev="' + escapeHtml(it.codigo) + '">' +
+          '<div class="rev-top"><div style="min-width:0"><div class="item-code">' + escapeHtml(it.codigo) + "</div>" +
+          '<div class="item-desc">' + escapeHtml(it.descripcion || "") + "</div></div>" + revDifHtml(dif) + "</div>" +
+          '<div class="rev-grid"><div><span>Sistema</span><b>' + formatNumber(it.sistema) + "</b></div>" +
+          "<div><span>0120</span><b>" + formatNumber(it.c120) + "</b></div>" +
+          "<div><span>0056</span><b>" + formatNumber(it.c56) + "</b></div>" +
+          "<div><span>EX</span><b>" + formatNumber(it.cex) + "</b></div>" +
+          "<div><span>Contado</span><b>" + formatNumber(total) + "</b></div></div>" +
+          (it.escaneos
+            ? '<p class="rev-hint' + (dup ? " dup" : "") + '">' + (dup ? "⚠ Posible duplicado: " : "") +
+              it.escaneos + " escaneo(s)" + (quienes ? " de " + escapeHtml(quienes) : "") +
+              (it.ajustes ? " · " + it.ajustes + " ajuste(s) previo(s)" : "") + "</p>"
+            : '<p class="rev-hint">No se escaneó ninguna unidad.</p>');
+        if (hecho && !editando) {
+          html += '<div class="rev-result"><span>' + (it.resultado === "Corregido" ? "✓ <b>Corregido</b>" : "✓ <b>Diferencia confirmada</b>") +
+            (it.reviso ? " · " + escapeHtml(it.reviso) : "") + (it.nota ? "<br><small>" + escapeHtml(it.nota) + "</small>" : "") + "</span>" +
+            (cerrado ? "" : '<button class="btn btn-outline btn-small" type="button" data-rev-act="cambiar">Cambiar</button>') + "</div>";
+        } else if (editando) {
+          const fila = (id, etiqueta, valor) =>
+            '<div class="rev-edit-row"><label for="rev-' + id + '">' + etiqueta + "</label>" +
+            '<div class="stepper"><button type="button" data-rev-step="-1" data-rev-target="rev-' + id + '" aria-label="Restar uno en ' + etiqueta + '">−</button>' +
+            '<input class="field" id="rev-' + id + '" type="number" inputmode="decimal" min="0" step="any" value="' + valor + '">' +
+            '<button type="button" data-rev-step="1" data-rev-target="rev-' + id + '" aria-label="Sumar uno en ' + etiqueta + '">+</button></div></div>';
+          html += '<div class="rev-edit">' + fila("c120", "0120", it.c120) + fila("c56", "0056", it.c56) + fila("cex", "EX", it.cex) +
+            '<p class="rev-total" id="revTotal">Total: ' + formatNumber(total) + " · sistema " + formatNumber(it.sistema) + "</p>" +
+            '<input class="field" id="rev-nota" type="text" maxlength="150" placeholder="Motivo (opcional): ej. escaneo duplicado" autocomplete="off">' +
+            '<div class="rev-actions"><button class="btn btn-outline" type="button" data-rev-act="cancelar">Cancelar</button>' +
+            '<button class="btn btn-primary" type="button" data-rev-act="guardar">Guardar corrección</button></div></div>';
+        } else if (!cerrado) {
+          html += '<div class="rev-actions"><button class="btn btn-secondary" type="button" data-rev-act="confirmar">✓ La diferencia es real</button>' +
+            '<button class="btn btn-outline" type="button" data-rev-act="corregir">✎ Corregir cantidad</button></div>';
+        }
+        return html + "</article>";
+      }
+
+      function renderRevision() {
+        const d = rev.data;
+        if (!d) return;
+        const total = d.items.length;
+        const hechos = total - d.pendientes;
+        $("revTitle").textContent = "Revisión · " + d.grupo;
+        const badge = $("revBadge");
+        badge.textContent = d.estado === "cerrado" ? "Cerrado" : "En revisión";
+        badge.className = "badge " + (d.estado === "cerrado" ? "badge-final" : "badge-provisional");
+        $("revSub").textContent = d.estado === "cerrado"
+          ? "Conteo cerrado el " + (d.cierre || "") + "."
+          : "Iniciada el " + (d.inicio || "") + (d.por ? " por " + d.por : "") + ". Verificá cada código: si la diferencia existe, confirmala; si la cantidad es otra, corregila.";
+        $("revBar").style.width = (total ? (hechos / total) * 100 : 100) + "%";
+        $("revProgress").textContent = total
+          ? hechos + " de " + total + " código(s) revisados" + (d.pendientes ? " · " + d.pendientes + " sin revisar" : "")
+          : "No hay códigos con diferencia en este grupo.";
+        $("revList").innerHTML = d.items.map(revItemHtml).join("") ||
+          '<div class="card empty"><div class="empty-icon">✓</div><strong>Sin diferencias</strong><p>Todo el grupo coincide con el sistema.</p></div>';
+        const cerrado = d.estado === "cerrado";
+        $("revCloseCard").hidden = cerrado;
+        $("revClose").disabled = d.pendientes > 0 || rev.cargando;
+        $("revConfirmAll").hidden = cerrado || d.pendientes === 0;
+        $("revCloseText").innerHTML = d.pendientes
+          ? "Quedan <b>" + d.pendientes + " código(s) sin revisar</b>. Un faltante o sobrante verdadero también se cierra: tocá " +
+            "<b>“La diferencia es real”</b> y queda registrado tal cual. Solo hace falta decidir cada código, no que dé cero."
+          : "Todo revisado. Las diferencias confirmadas quedan como faltante o sobrante en el reporte de Auditoría. Al cerrar, el grupo queda cerrado.";
+        renderRevCard();
+      }
+
+      function revActualizarTotal(it) {
+        const v = (id) => Number(String($(id).value).replace(",", ".")) || 0;
+        const total = v("rev-c120") + v("rev-c56") + v("rev-cex");
+        $("revTotal").innerHTML = "Total: <b>" + formatNumber(total) + "</b> · sistema " + formatNumber(it.sistema) +
+          " · diferencia " + revDifHtml(total - it.sistema).replace("rev-dif", "rev-dif rev-dif-inline");
+      }
+
+      async function revDecidir(codigo, decision, extra) {
+        if (rev.cargando) return;
+        rev.cargando = true;
+        hideMessage("revMessage");
+        const card = document.querySelector('[data-rev="' + CSS.escape(codigo) + '"]');
+        if (card) card.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+        try {
+          await revLlamar("resolver", Object.assign({ codigo, decision }, extra || {}));
+          rev.editando = null;
+          renderRevision();
+          if (decision === "corregir") initializeCatalog(true); // trae el conteo corregido
+        } catch (error) {
+          showMessage("revMessage", "No se pudo guardar " + codigo + ": " + error.message, "error");
+          if (card) card.querySelectorAll("button").forEach((b) => { b.disabled = false; });
+        } finally {
+          rev.cargando = false;
+          $("revClose").disabled = !rev.data || rev.data.pendientes > 0;
+        }
+      }
+
+      $("revOpen").addEventListener("click", abrirRevision);
+      $("revBack").addEventListener("click", () => setView("dashboard"));
+      $("dashGroupSelect").addEventListener("change", () => { rev.data = null; renderRevCard(); });
+
+      $("revList").addEventListener("click", (event) => {
+        const paso = event.target.closest("[data-rev-step]");
+        const card = event.target.closest("[data-rev]");
+        if (!card || !rev.data) return;
+        const codigo = card.dataset.rev;
+        const it = rev.data.items.find((x) => x.codigo === codigo);
+        if (!it) return;
+        if (paso) {
+          const input = $(paso.dataset.revTarget);
+          const nuevo = (Number(String(input.value).replace(",", ".")) || 0) + Number(paso.dataset.revStep);
+          input.value = String(Math.max(0, nuevo));
+          revActualizarTotal(it);
+          return;
+        }
+        const boton = event.target.closest("[data-rev-act]");
+        if (!boton) return;
+        const act = boton.dataset.revAct;
+        if (act === "confirmar") {
+          revDecidir(codigo, "confirmar");
+        } else if (act === "corregir" || act === "cambiar") {
+          rev.editando = codigo;
+          renderRevision();
+          const primero = $("rev-c120");
+          if (primero) primero.focus({ preventScroll: true });
+        } else if (act === "cancelar") {
+          rev.editando = null;
+          renderRevision();
+        } else if (act === "guardar") {
+          const v = (id) => Number(String($(id).value).replace(",", "."));
+          const valores = { c120: v("rev-c120"), c56: v("rev-c56"), cex: v("rev-cex") };
+          if (Object.values(valores).some((n) => !(n >= 0))) {
+            showMessage("revMessage", "Las cantidades deben ser 0 o más.", "warning");
+            return;
+          }
+          revDecidir(codigo, "corregir", Object.assign(valores, { nota: $("rev-nota").value }));
+        }
+      });
+      $("revList").addEventListener("input", (event) => {
+        if (!event.target.matches("#rev-c120, #rev-c56, #rev-cex") || !rev.data) return;
+        const it = rev.data.items.find((x) => x.codigo === rev.editando);
+        if (it) revActualizarTotal(it);
+      });
+
+      $("revConfirmAll").addEventListener("click", async () => {
+        if (!rev.data || !rev.data.pendientes || rev.cargando) return;
+        if (!window.confirm("¿Confirmar las " + rev.data.pendientes + " diferencias sin revisar como reales?\n\nQuedan como faltante o sobrante, sin corregir cantidades.")) return;
+        const boton = $("revConfirmAll");
+        rev.cargando = true;
+        boton.disabled = true;
+        try {
+          await revLlamar("confirmar_restantes");
+          rev.editando = null;
+          renderRevision();
+        } catch (error) {
+          showMessage("revMessage", "No se pudieron confirmar: " + error.message, "error");
+        } finally {
+          rev.cargando = false;
+          boton.disabled = false;
+          $("revClose").disabled = !rev.data || rev.data.pendientes > 0;
+        }
+      });
+
+      $("revClose").addEventListener("click", async () => {
+        if (!rev.data || rev.data.pendientes) return;
+        if (!window.confirm("¿Cerrar definitivamente el conteo de " + rev.data.grupo + "?")) return;
+        const boton = $("revClose");
+        boton.disabled = true;
+        boton.textContent = "Cerrando…";
+        try {
+          await revLlamar("cerrar");
+          renderRevision();
+          showMessage("revMessage", "✓ Conteo de " + rev.data.grupo + " cerrado. Ya podés generar el reporte de Auditoría desde la planilla.", "success");
+        } catch (error) {
+          showMessage("revMessage", "No se pudo cerrar: " + error.message, "error");
+        } finally {
+          boton.textContent = "Cerrar conteo";
+          $("revClose").disabled = !rev.data || rev.data.pendientes > 0;
+        }
+      });
 
       async function initializeCatalog(quiet = false) {
         const handle = perfStart("catalog");
@@ -5808,6 +6242,10 @@
           });
           if (withCatalog && Array.isArray(data.items))
             applyCatalogResponse(data);
+          if (data.usuario && data.usuario.rol) {
+            state.rol = data.usuario.rol;
+            renderRevCard();
+          }
           const resumen = data.resumen || {};
           state.resumen = {
             disponible: !!resumen.disponible,
@@ -5853,19 +6291,24 @@
         session: ["viewSession", "tabSession"],
         stock: ["viewStock", "tabStock"],
         dashboard: ["viewDashboard", "tabDashboard"],
+        // Revisión de diferencias: se abre desde Panel (sin pestaña propia).
+        review: ["viewReview", "tabDashboard"],
       };
       function setView(view, options = {}) {
         // "count" era el nombre anterior de la pantalla de escaneo.
         state.view = VIEWS[view] ? view : "scan";
         Object.keys(VIEWS).forEach((name) => {
           $(VIEWS[name][0]).hidden = state.view !== name;
-          $(VIEWS[name][1]).setAttribute(
+        });
+        ["tabScan", "tabSession", "tabStock", "tabDashboard"].forEach((tab) => {
+          $(tab).setAttribute(
             "aria-selected",
-            String(state.view === name),
+            String(VIEWS[state.view][1] === tab),
           );
         });
         $("suggestions").hidden = true;
         if (state.view === "dashboard") {
+          renderRevCard();
           $("appAccount").textContent =
             (auth.currentUser && auth.currentUser.email) ||
             $("authIdentity").textContent ||
