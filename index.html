@@ -3002,7 +3002,7 @@
       } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
       window.__cstockReady = true;
-      const APP_VERSION = "2026.11.22-1";
+      const APP_VERSION = "2026.11.22-2";
       const MODULE_START = performance.now();
 
       // ===================== OBSERVACIONES AL CONTAR =====================
@@ -5202,11 +5202,11 @@
           );
         if (!resumen) {
           reasons.push(
-            "Todavía no se consultó RESUMEN_DIFERENCIAS en esta sesión: OK / Sobrante / Faltante se estiman con la lista local.",
+            "Todavía no se consultó la hoja Resumen en esta sesión: OK / Sobrante / Faltante se estiman con la lista local.",
           );
         } else {
           if (!resumen.disponible)
-            reasons.push("La hoja RESUMEN_DIFERENCIAS no tiene datos.");
+            reasons.push("La hoja Resumen no tiene datos.");
           if (server && server.acomodar)
             reasons.push(
               server.acomodar +
@@ -5354,7 +5354,7 @@
         const okN = s ? s.ok : data.local.ok;
         const surplusN = s ? s.surplus : data.local.surplus;
         const shortN = s ? s.short : data.local.partial;
-        const sourceText = s ? "Según RESUMEN_DIFERENCIAS" : "Estimación local";
+        const sourceText = s ? "Según la hoja Resumen" : "Estimación local";
 
         // KPIs.
         const queue = state.queue.length;
