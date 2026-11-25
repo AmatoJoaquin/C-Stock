@@ -3372,7 +3372,7 @@
       } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
       window.__cstockReady = true;
-      const APP_VERSION = "2026.11.22-4";
+      const APP_VERSION = "2026.11.25-1";
       const MODULE_START = performance.now();
 
       // ===================== OBSERVACIONES AL CONTAR =====================
@@ -5796,7 +5796,7 @@
           formatNumber(totals.codes) + " / " + formatNumber(items.length);
         $("progressUnits").textContent =
           formatNumber(totals.counted) + " / " + formatNumber(totals.system);
-        $("progressPercent").textContent = formatNumber(percent) + "%";
+        $("progressPercent").textContent = Math.floor(percent) + "%";
         $("progressBar").style.width = percent + "%";
         $("progressRing").style.setProperty("--p", String(percent));
         $("progressRing").setAttribute(
