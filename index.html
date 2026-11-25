@@ -1838,6 +1838,8 @@
         color: var(--muted);
       }
       .loc-seg button[data-loc-pick="0120"] { --loc: var(--loc-0120); }
+      /* Sucursal sin depósito externo: 2 botones. */
+      .loc-seg[data-n="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .loc-seg button[data-loc-pick="0056"] { --loc: var(--loc-0056); }
       .loc-seg button[data-loc-pick="EX"] { --loc: var(--loc-ex); }
       .loc-seg button[aria-checked="true"] {
@@ -2522,7 +2524,7 @@
           />
           <div style="min-width: 0">
             <h1>C-Stock</h1>
-            <p>Toma de stock · Conteo por ubicación</p>
+            <p id="appSubtitle">Toma de stock · Conteo por ubicación</p>
           </div>
         </div>
         <div class="top-actions">
@@ -3372,7 +3374,7 @@
       } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
       window.__cstockReady = true;
-      const APP_VERSION = "2026.11.25-1";
+      const APP_VERSION = "2026.11.25-2";
       const MODULE_START = performance.now();
 
       // ===================== OBSERVACIONES AL CONTAR =====================
@@ -3452,9 +3454,88 @@
       const firebaseApp = initializeApp(firebaseConfig);
       const auth = getAuth(firebaseApp);
 
-      // URL del Web App de Google Apps Script.
-      const WEB_APP_URL =
-        "https://script.google.com/macros/s/AKfycbx_VhAaDPcw1nHQw6ZvAKs88f9eKJ111w3hOi5HFKOv2ErrlMvpKMBOeR1t1qID1ugI/exec";
+      // ===================== SUCURSAL (servidor de cada planilla) =====================
+      // Cada sucursal tiene su planilla y su servidor de Apps Script. El enlace
+      // de la sucursal trae el id del servidor (?s=<id>) y queda guardado en el
+      // celular. Sin enlace ni sucursal guardada se usa el servidor de Cosquín.
+      const BACKEND_POR_DEFECTO =
+        "AKfycbx_VhAaDPcw1nHQw6ZvAKs88f9eKJ111w3hOi5HFKOv2ErrlMvpKMBOeR1t1qID1ugI";
+      const BACKEND_ID_RE = /^AKfy[A-Za-z0-9_-]{30,}$/;
+      const BACKEND_KEY = "cstock_backend_id";
+
+      /** Id de servidor válido que trae el enlace (?s=), o null. */
+      function backendDesdeEnlace(search) {
+        try {
+          const valor = new URLSearchParams(search || "").get("s");
+          return valor && BACKEND_ID_RE.test(valor) ? valor : null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function backendGuardado() {
+        try {
+          const valor = localStorage.getItem(BACKEND_KEY);
+          return valor && BACKEND_ID_RE.test(valor) ? valor : null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      /** Escaneos sin enviar guardados en este celular para un servidor. */
+      function pendientesDeBackend(id) {
+        const prefijo = "tomaStockApp_v2_" + id + "_";
+        let total = 0;
+        try {
+          for (let i = 0; i < localStorage.length; i++) {
+            const clave = localStorage.key(i) || "";
+            if (clave.indexOf(prefijo) !== 0 || /_(catalog|location)$/.test(clave)) continue;
+            const datos = JSON.parse(localStorage.getItem(clave) || "{}");
+            total += Array.isArray(datos.queue) ? datos.queue.length : 0;
+          }
+        } catch (error) {
+          // Sin acceso al almacenamiento: no hay forma de saberlo.
+        }
+        return total;
+      }
+
+      function elegirBackend() {
+        const guardado = backendGuardado();
+        const actual = guardado || BACKEND_POR_DEFECTO;
+        const pedido = backendDesdeEnlace(location.search);
+        let elegido = actual;
+        if (pedido && pedido !== actual) {
+          const pendientes = pendientesDeBackend(actual);
+          const preguntar = !!guardado || pendientes > 0;
+          const texto = pendientes > 0
+            ? "Este enlace es de otra sucursal. En este celular hay " + pendientes +
+              " escaneo(s) sin enviar de la sucursal anterior: quedan guardados y se envían cuando vuelvas a abrir su enlace.\n\n¿Cambiar de sucursal?"
+            : "Este enlace es de otra sucursal. ¿Cambiar a esa sucursal en este celular?";
+          if (!preguntar || window.confirm(texto)) elegido = pedido;
+        }
+        if (elegido !== actual) {
+          try {
+            localStorage.setItem(BACKEND_KEY, elegido);
+          } catch (error) {
+            // Sin almacenamiento: se usa la sucursal del enlace solo en esta visita.
+          }
+        }
+        if (new URLSearchParams(location.search).has("s")) {
+          try {
+            const params = new URLSearchParams(location.search);
+            params.delete("s");
+            const resto = params.toString();
+            history.replaceState(null, "", location.pathname + (resto ? "?" + resto : "") + location.hash);
+          } catch (error) {
+            // No crítico: el enlace queda visible en la barra.
+          }
+        }
+        return elegido;
+      }
+
+      const BACKEND_ID = elegirBackend();
+      // URL del Web App de Google Apps Script de esta sucursal.
+      const WEB_APP_URL = "https://script.google.com/macros/s/" + BACKEND_ID + "/exec";
       // Clave existente de conteos y cola offline: NO cambiar.
       const STORAGE_KEY_BASE =
         "tomaStockApp_v2_" + WEB_APP_URL.split("/").slice(-2, -1)[0] + "_";
@@ -3471,7 +3552,82 @@
       let catalogRefreshWhenVisible = false;
 
       const EPSILON = 0.000001;
+      // Claves internas fijas de los 3 lugares (no cambian entre sucursales).
+      // LOCATIONS contiene solo los que usa esta sucursal (ver applySucursal).
       const LOCATIONS = ["0120", "0056", "EX"];
+      const SUCURSAL_KEY = "cstock_sucursal_" + BACKEND_ID;
+      const SUCURSAL_COSQUIN = {
+        nombre: "",
+        ubicaciones: [
+          { id: "0120", codigo: "0120", nombre: "Depósito", activo: true },
+          { id: "0056", codigo: "0056", nombre: "Depósito real", activo: true },
+          { id: "EX", codigo: "EX", nombre: "Exhibición", activo: true },
+        ],
+      };
+      let SUCURSAL = SUCURSAL_COSQUIN;
+
+      function sucursalValida(s) {
+        return !!s && Array.isArray(s.ubicaciones) && s.ubicaciones.length === 3 &&
+          ["0120", "0056", "EX"].every((id, i) => s.ubicaciones[i] && s.ubicaciones[i].id === id) &&
+          s.ubicaciones[1].activo !== false && s.ubicaciones[2].activo !== false;
+      }
+
+      function ubicacion(id) {
+        return SUCURSAL.ubicaciones.find((u) => u.id === id) ||
+          SUCURSAL_COSQUIN.ubicaciones.find((u) => u.id === id);
+      }
+
+      /** Toma los datos de la sucursal (del servidor o guardados) y arma los botones de lugar. */
+      function applySucursal(s, options = {}) {
+        if (!sucursalValida(s)) return;
+        SUCURSAL = {
+          nombre: String(s.nombre || ""),
+          ubicaciones: s.ubicaciones.map((u) => ({
+            id: u.id,
+            codigo: String(u.codigo || u.id),
+            nombre: String(u.nombre || ""),
+            activo: u.activo !== false,
+          })),
+        };
+        if (options.save !== false) {
+          try {
+            localStorage.setItem(SUCURSAL_KEY, JSON.stringify(SUCURSAL));
+          } catch (error) {
+            // No crítico: se vuelve a recibir del servidor.
+          }
+        }
+        LOCATIONS.splice(0, LOCATIONS.length, ...SUCURSAL.ubicaciones.filter((u) => u.activo).map((u) => u.id));
+        document.querySelectorAll("[data-loc-pick]").forEach((b) => {
+          const u = ubicacion(b.dataset.locPick);
+          b.hidden = !LOCATIONS.includes(u.id);
+          const codigo = document.createElement("b");
+          codigo.textContent = u.codigo;
+          const nombre = document.createElement("span");
+          nombre.textContent = u.nombre;
+          b.replaceChildren(codigo, nombre);
+        });
+        $("locationCard").dataset.n = String(LOCATIONS.length);
+        Array.from($("locationSelect").options).forEach((o) => {
+          const u = ubicacion(o.value);
+          o.textContent = u.codigo + " · " + u.nombre;
+          o.disabled = !LOCATIONS.includes(u.id);
+        });
+        $("appSubtitle").textContent = SUCURSAL.nombre
+          ? "Toma de stock · " + SUCURSAL.nombre
+          : "Toma de stock · Conteo por ubicación";
+        const actual = $("locationSelect").value;
+        if (!LOCATIONS.includes(actual)) setLocation(LOCATIONS.includes("0056") ? "0056" : LOCATIONS[0]);
+        else setLocation(actual, { save: false });
+      }
+
+      function restoreSucursal() {
+        try {
+          const guardada = JSON.parse(localStorage.getItem(SUCURSAL_KEY) || "null");
+          if (guardada) applySucursal(guardada, { save: false });
+        } catch (error) {
+          // Se usa la de Cosquín hasta recibir la del servidor.
+        }
+      }
       const SIS_FIELD = { "0120": "sis_120", "0056": "sis_56", EX: "sis_ex" };
       const CONT_FIELD = {
         "0120": "cont_120",
@@ -3876,13 +4032,13 @@
         catalogStoredSeparately = false;
         rowHtmlCache.clear();
         cancelCatalogRefresh();
-        setLocation("0120", { save: false });
+        setLocation(LOCATIONS[0], { save: false });
         invalidateDerived();
       }
 
       // ===================== UBICACIÓN ACTIVA =====================
       function setLocation(value, options = {}) {
-        const loc = LOCATIONS.includes(value) ? value : "0120";
+        const loc = LOCATIONS.includes(value) ? value : LOCATIONS[0];
         const select = $("locationSelect");
         const changed = $("scanCard").dataset.loc !== loc;
         select.value = loc;
@@ -3921,7 +4077,7 @@
         } catch (error) {
           saved = "";
         }
-        setLocation(saved || "0120", { save: false });
+        setLocation(LOCATIONS.includes(saved) ? saved : LOCATIONS[0], { save: false });
       }
 
       // La ubicación se elige con los 3 botones de arriba: tocar el aviso
@@ -4132,6 +4288,7 @@
 
       /** Aplica una respuesta del servidor que trae el catálogo. */
       function applyCatalogResponse(data) {
+        if (data.sucursal) applySucursal(data.sucursal);
         state.catalog = Array.isArray(data.items) ? data.items : [];
         state.sheetUrl = data.sheetUrl || state.sheetUrl;
         state.catalogLoadedAt = Date.now();
@@ -4700,7 +4857,9 @@
             '<div class="stepper"><button type="button" data-rev-step="-1" data-rev-target="rev-' + id + '" aria-label="Restar uno en ' + etiqueta + '">−</button>' +
             '<input class="field" id="rev-' + id + '" type="number" inputmode="decimal" min="0" step="any" value="' + valor + '">' +
             '<button type="button" data-rev-step="1" data-rev-target="rev-' + id + '" aria-label="Sumar uno en ' + etiqueta + '">+</button></div></div>';
-          html += '<div class="rev-edit">' + fila("c120", "0120", it.c120) + fila("c56", "0056", it.c56) + fila("cex", "EX", it.cex) +
+          const filaExt = fila("c120", escapeHtml(ubicacion("0120").codigo), it.c120);
+          html += '<div class="rev-edit">' + (LOCATIONS.includes("0120") ? filaExt : "<div hidden>" + filaExt + "</div>") +
+            fila("c56", escapeHtml(ubicacion("0056").codigo), it.c56) + fila("cex", escapeHtml(ubicacion("EX").codigo), it.cex) +
             '<p class="rev-total" id="revTotal">Total: ' + formatNumber(total) + " · sistema " + formatNumber(it.sistema) + "</p>" +
             '<input class="field" id="rev-nota" type="text" maxlength="150" placeholder="Motivo (opcional): ej. escaneo duplicado" autocomplete="off">' +
             '<div class="rev-actions"><button class="btn btn-outline" type="button" data-rev-act="cancelar">Cancelar</button>' +
@@ -6176,11 +6335,8 @@
       }
 
       function locationLabel(value) {
-        return value === "0120"
-          ? "0120 · Depósito"
-          : value === "0056"
-            ? "0056 · Depósito real"
-            : "EX · Exhibición";
+        const u = ubicacion(value === "0120" || value === "0056" ? value : "EX");
+        return u.codigo + " · " + u.nombre;
       }
 
       function focusCodeInput() {
@@ -6922,6 +7078,7 @@
           });
           if (withCatalog && Array.isArray(data.items))
             applyCatalogResponse(data);
+          else if (data.sucursal) applySucursal(data.sucursal);
           if (data.usuario && data.usuario.rol) {
             state.rol = data.usuario.rol;
             renderRevCard();
@@ -7099,6 +7256,7 @@
         const validateHandle = perfStart("auth.validate");
         STORAGE_KEY = STORAGE_KEY_BASE + user.uid;
         restore();
+        restoreSucursal();
         restoreLocation();
 
         $("authSignedOut").hidden = true;
