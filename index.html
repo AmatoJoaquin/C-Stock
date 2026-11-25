@@ -2649,7 +2649,7 @@
           <select id="locationSelect" aria-hidden="true" tabindex="-1" hidden>
             <option value="0120">0120 · Depósito 0120</option>
             <option value="0056">0056 · Depósito 0056 real</option>
-            <option value="EX">EX · Exhibición 0056</option>
+            <option value="EX">EX · Exhibición</option>
           </select>
 
           <!-- Grupo + avance en una sola fila -->
@@ -3374,7 +3374,7 @@
       } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
       window.__cstockReady = true;
-      const APP_VERSION = "2026.11.25-2";
+      const APP_VERSION = "2026.11.25-3";
       const MODULE_START = performance.now();
 
       // ===================== OBSERVACIONES AL CONTAR =====================
@@ -4837,10 +4837,10 @@
         let html = '<article class="rev-item ' + clase + '" data-rev="' + escapeHtml(it.codigo) + '">' +
           '<div class="rev-top"><div style="min-width:0"><div class="item-code">' + escapeHtml(it.codigo) + "</div>" +
           '<div class="item-desc">' + escapeHtml(it.descripcion || "") + "</div></div>" + revDifHtml(dif) + "</div>" +
-          '<div class="rev-grid"><div><span>Sistema</span><b>' + formatNumber(it.sistema) + "</b></div>" +
-          "<div><span>0120</span><b>" + formatNumber(it.c120) + "</b></div>" +
-          "<div><span>0056</span><b>" + formatNumber(it.c56) + "</b></div>" +
-          "<div><span>EX</span><b>" + formatNumber(it.cex) + "</b></div>" +
+          '<div class="rev-grid" style="grid-template-columns:repeat(' + (LOCATIONS.length + 2) + ',minmax(0,1fr))">' +
+          "<div><span>Sistema</span><b>" + formatNumber(it.sistema) + "</b></div>" +
+          LOCATIONS.map((id) => "<div><span>" + escapeHtml(ubicacion(id).codigo) + "</span><b>" +
+            formatNumber(id === "0120" ? it.c120 : id === "0056" ? it.c56 : it.cex) + "</b></div>").join("") +
           "<div><span>Contado</span><b>" + formatNumber(total) + "</b></div></div>" +
           (it.escaneos
             ? '<p class="rev-hint' + (dup ? " dup" : "") + '">' + (dup ? "⚠ Posible duplicado: " : "") +
