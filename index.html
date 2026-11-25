@@ -3374,7 +3374,7 @@
       } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
       window.__cstockReady = true;
-      const APP_VERSION = "2026.11.25-3";
+      const APP_VERSION = "2026.11.25-4";
       const MODULE_START = performance.now();
 
       // ===================== OBSERVACIONES AL CONTAR =====================
@@ -3462,12 +3462,25 @@
         "AKfycbx_VhAaDPcw1nHQw6ZvAKs88f9eKJ111w3hOi5HFKOv2ErrlMvpKMBOeR1t1qID1ugI";
       const BACKEND_ID_RE = /^AKfy[A-Za-z0-9_-]{30,}$/;
       const BACKEND_KEY = "cstock_backend_id";
+      // Por seguridad, la App solo se conecta a las sucursales de esta lista
+      // (el inicio de sesión de Google viaja al servidor de la sucursal).
+      // Para sumar una sucursal: agregar el ID de su implementación (lo muestra
+      // "Configurar sucursal" en su planilla), subir APP_VERSION y publicar.
+      const SUCURSALES_PERMITIDAS = [
+        { id: "AKfycbx_VhAaDPcw1nHQw6ZvAKs88f9eKJ111w3hOi5HFKOv2ErrlMvpKMBOeR1t1qID1ugI", nombre: "Sucursal Cosquín" },
+        { id: "AKfycbz_h8m2MAB7EtwAw-bj3DAQCtwT5Fjhj_AVUTDFGkXwglfh-r1gfP5v0HO3EQOZIfutBw", nombre: "Copia de prueba" },
+      ];
+      let AVISO_ENLACE = "";
+
+      function backendPermitido(id) {
+        return !!id && BACKEND_ID_RE.test(id) && SUCURSALES_PERMITIDAS.some((s) => s.id === id);
+      }
 
       /** Id de servidor válido que trae el enlace (?s=), o null. */
       function backendDesdeEnlace(search) {
         try {
           const valor = new URLSearchParams(search || "").get("s");
-          return valor && BACKEND_ID_RE.test(valor) ? valor : null;
+          return backendPermitido(valor) ? valor : null;
         } catch (error) {
           return null;
         }
@@ -3476,7 +3489,7 @@
       function backendGuardado() {
         try {
           const valor = localStorage.getItem(BACKEND_KEY);
-          return valor && BACKEND_ID_RE.test(valor) ? valor : null;
+          return backendPermitido(valor) ? valor : null;
         } catch (error) {
           return null;
         }
@@ -3503,6 +3516,10 @@
         const guardado = backendGuardado();
         const actual = guardado || BACKEND_POR_DEFECTO;
         const pedido = backendDesdeEnlace(location.search);
+        if (!pedido && new URLSearchParams(location.search).get("s")) {
+          AVISO_ENLACE = "Este enlace es de una sucursal que no está habilitada en la App. Se sigue usando la sucursal anterior. " +
+            "Si es una sucursal nueva, pedile al administrador que la habilite.";
+        }
         let elegido = actual;
         if (pedido && pedido !== actual) {
           const pendientes = pendientesDeBackend(actual);
@@ -3534,6 +3551,15 @@
       }
 
       const BACKEND_ID = elegirBackend();
+      if (AVISO_ENLACE) {
+        window.setTimeout(() => {
+          try {
+            showMessage(document.getElementById("appContent").hidden ? "authMessage" : "mainMessage", AVISO_ENLACE, "warning");
+          } catch (error) {
+            // El aviso no es crítico.
+          }
+        }, 1500);
+      }
       // URL del Web App de Google Apps Script de esta sucursal.
       const WEB_APP_URL = "https://script.google.com/macros/s/" + BACKEND_ID + "/exec";
       // Clave existente de conteos y cola offline: NO cambiar.
@@ -5373,6 +5399,7 @@
               );
               // El servidor respondió y rechazó (no es un problema de red).
               rejected.serverRejected = true;
+              rejected.codigo = (data && data.codigo) || "";
               finish(rejected);
               return;
             }
@@ -5474,7 +5501,24 @@
             }
 
             const opHandle = perfStart("sync." + op.action);
-            const result = await postToAppsScript(payload);
+            let result;
+            try {
+              result = await postToAppsScript(payload);
+            } catch (error) {
+              if (op.action === "add" && error.codigo === "EXTERNO_INACTIVO" && op.payload.deposito !== "0056") {
+                op.payload.deposito = "0056";
+                if (item) item.deposito = "0056";
+                persist();
+                showMessage(
+                  "mainMessage",
+                  "Un escaneo cargado en el depósito externo se pasó a " + locationLabel("0056") +
+                    ": esta sucursal no tiene depósito externo. Revisalo en Sesión si hace falta.",
+                  "warning",
+                );
+                continue;
+              }
+              throw error;
+            }
             perfEnd(opHandle, { serverMs: result && result.serverMs });
 
             if (op.action === "add") {
