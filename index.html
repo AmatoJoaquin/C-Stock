@@ -2538,6 +2538,16 @@
           grid-template-columns: minmax(0, 1fr);
         }
       }
+      /* Apartado Sucursales (administrador general) */
+      .adm-label { display: block; margin: 12px 0 6px; font-weight: 700; font-size: 14px; }
+      .adm-item { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+      .adm-item:first-child { border-top: 0; }
+      .adm-info { flex: 1; min-width: 0; }
+      .adm-nombre { font-weight: 800; }
+      .adm-id { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+      .adm-estado { font-size: 12px; font-weight: 800; }
+      .adm-estado.on { color: var(--success, #17613b); }
+      .adm-estado.off { color: var(--muted); }
     </style>
   </head>
   <body>
@@ -3080,6 +3090,33 @@
               <div class="table-scroll" id="dashPerf"></div>
             </details>
           </section>
+          <section class="card" id="adminCard" hidden>
+            <div class="section-title">
+              <h2>Sucursales</h2>
+              <span class="badge badge-local">Administrador general</span>
+            </div>
+            <p class="dash-meta">Habilitá o da de baja las sucursales que pueden usar la App.</p>
+            <button class="btn btn-secondary" id="adminOpen" type="button" style="margin-top: 10px">Administrar sucursales</button>
+          </section>
+        </div>
+
+        <!-- ===================== VISTA SUCURSALES (solo administrador general) ===================== -->
+        <div id="viewAdmin" role="tabpanel" aria-labelledby="admTitle" hidden>
+          <button class="rev-back" id="admBack" type="button">← Volver al Panel</button>
+          <section class="card">
+            <div class="section-title"><h2 id="admTitle">Dar de alta una sucursal</h2></div>
+            <p class="dash-meta">Pegá el ID que te mandó la sucursal (lo muestra su asistente “Configurar sucursal”).</p>
+            <label class="adm-label" for="admId">ID del servidor</label>
+            <input class="field" id="admId" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="AKfy…" />
+            <label class="adm-label" for="admNombre">Nombre de la sucursal</label>
+            <input class="field" id="admNombre" type="text" maxlength="80" placeholder="Ej.: Sucursal Rio" />
+            <button class="btn btn-primary" id="admAlta" type="button" style="margin-top: 12px; width: 100%">Dar de alta</button>
+            <div id="admMsg" class="message" role="status" aria-live="polite" style="margin: 10px 0 0"></div>
+          </section>
+          <section class="card">
+            <div class="section-title"><h2>Sucursales habilitadas</h2></div>
+            <div id="admLista"><p class="dash-meta">Cargando…</p></div>
+          </section>
         </div>
 
         <!-- ===================== VISTA REVISIÓN DE DIFERENCIAS ===================== -->
@@ -3404,7 +3441,7 @@
       } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
       window.__cstockReady = true;
-      const APP_VERSION = "2026.11.25-5";
+      const APP_VERSION = "2026.11.25-6";
       const MODULE_START = performance.now();
 
       // ===================== OBSERVACIONES AL CONTAR =====================
@@ -3494,16 +3531,35 @@
       const BACKEND_KEY = "cstock_backend_id";
       // Por seguridad, la App solo se conecta a las sucursales de esta lista
       // (el inicio de sesión de Google viaja al servidor de la sucursal).
-      // Para sumar una sucursal: agregar el ID de su implementación (lo muestra
-      // "Configurar sucursal" en su planilla), subir APP_VERSION y publicar.
+      // Las sucursales nuevas se habilitan desde el apartado "Sucursales" de la App
+      // (solo el administrador general) y quedan en el registro de Cosquín.
+      // Esta lista fija es la base y sirve sin conexión.
       const SUCURSALES_PERMITIDAS = [
         { id: "AKfycbx_VhAaDPcw1nHQw6ZvAKs88f9eKJ111w3hOi5HFKOv2ErrlMvpKMBOeR1t1qID1ugI", nombre: "Sucursal Cosquín" },
-        { id: "AKfycbz_h8m2MAB7EtwAw-bj3DAQCtwT5Fjhj_AVUTDFGkXwglfh-r1gfP5v0HO3EQOZIfutBw", nombre: "Copia de prueba" },
       ];
       let AVISO_ENLACE = "";
+      // Enlace con un ID bien formado que todavía no figura en las listas: se consulta al registro.
+      let ENLACE_PENDIENTE = "";
+      // Administrador general: el único que ve el apartado de altas (el servidor también lo exige).
+      const SUPERADMIN_EMAIL = "joaquinamato98@gmail.com";
+      // Registro oficial de sucursales habilitadas: el servidor de Cosquín (dirección fija).
+      const REGISTRO_URL = "https://script.google.com/macros/s/AKfycbx_VhAaDPcw1nHQw6ZvAKs88f9eKJ111w3hOi5HFKOv2ErrlMvpKMBOeR1t1qID1ugI/exec";
+      const REGISTRO_KEY = "cstock_registro_v1";
+
+      /** Última copia del registro guardada en el celular: { sucursales: [{ id, nombre }], at }. */
+      function registroGuardado() {
+        try {
+          const datos = JSON.parse(localStorage.getItem(REGISTRO_KEY) || "null");
+          return datos && Array.isArray(datos.sucursales) ? datos : { sucursales: [], at: 0 };
+        } catch (error) {
+          return { sucursales: [], at: 0 };
+        }
+      }
 
       function backendPermitido(id) {
-        return !!id && BACKEND_ID_RE.test(id) && SUCURSALES_PERMITIDAS.some((s) => s.id === id);
+        return !!id && BACKEND_ID_RE.test(id) &&
+          (SUCURSALES_PERMITIDAS.some((s) => s.id === id) ||
+            registroGuardado().sucursales.some((s) => s && s.id === id));
       }
 
       /** Id de servidor válido que trae el enlace (?s=), o null. */
@@ -3546,9 +3602,25 @@
         const guardado = backendGuardado();
         const actual = guardado || BACKEND_POR_DEFECTO;
         const pedido = backendDesdeEnlace(location.search);
-        if (!pedido && new URLSearchParams(location.search).get("s")) {
-          AVISO_ENLACE = "Este enlace es de una sucursal que no está habilitada en la App. Se sigue usando la sucursal anterior. " +
-            "Si es una sucursal nueva, pedile al administrador que la habilite.";
+        const valorEnlace = new URLSearchParams(location.search).get("s");
+        if (!pedido && valorEnlace) {
+          if (BACKEND_ID_RE.test(valorEnlace)) {
+            // Puede ser una sucursal recién habilitada: se consulta el registro después de cargar.
+            ENLACE_PENDIENTE = valorEnlace;
+          } else {
+            AVISO_ENLACE = "Este enlace es de una sucursal que no está habilitada en la App. Se sigue usando la sucursal anterior. " +
+              "Si es una sucursal nueva, pedile al administrador que la habilite.";
+          }
+        }
+        let guardadoCrudo = "";
+        try {
+          guardadoCrudo = localStorage.getItem(BACKEND_KEY) || "";
+        } catch (error) {
+          guardadoCrudo = "";
+        }
+        if (guardadoCrudo && !backendPermitido(guardadoCrudo) && !pedido) {
+          AVISO_ENLACE = "La sucursal que tenía guardada este celular ya no está habilitada. Se usa la sucursal principal; " +
+            "si es un error, pedile al administrador que la vuelva a habilitar.";
         }
         let elegido = actual;
         if (pedido && pedido !== actual) {
@@ -3581,7 +3653,9 @@
       }
 
       const BACKEND_ID = elegirBackend();
-      if (AVISO_ENLACE) {
+
+      function mostrarAvisoEnlace() {
+        if (!AVISO_ENLACE) return;
         window.setTimeout(() => {
           try {
             showMessage(document.getElementById("appContent").hidden ? "authMessage" : "mainMessage", AVISO_ENLACE, "warning");
@@ -3590,6 +3664,66 @@
           }
         }, 1500);
       }
+
+      /** Trae del servidor de Cosquín la lista de sucursales habilitadas y la guarda en el celular. */
+      async function actualizarRegistro() {
+        const respuesta = await fetch(REGISTRO_URL + "?action=sucursales", { cache: "no-store" });
+        const datos = await respuesta.json();
+        if (!datos || datos.ok !== true || !Array.isArray(datos.sucursales)) throw new Error("Registro no disponible.");
+        const lista = datos.sucursales
+          .filter((s) => s && BACKEND_ID_RE.test(String(s.id || "")))
+          .map((s) => ({ id: String(s.id), nombre: String(s.nombre || "") }));
+        try {
+          localStorage.setItem(REGISTRO_KEY, JSON.stringify({ sucursales: lista, at: Date.now() }));
+        } catch (error) {
+          // Sin almacenamiento: se consulta de nuevo la próxima vez.
+        }
+        return lista;
+      }
+
+      /** Si el enlace trae una sucursal nueva, la busca en el registro antes de conectarse. */
+      async function verificarEnlacePendiente() {
+        // El registro se refresca cada vez que se abre la App: una baja se aplica enseguida.
+        let lista = null;
+        try {
+          lista = await actualizarRegistro();
+        } catch (error) {
+          lista = null;
+        }
+        if (lista && !backendPermitido(BACKEND_ID)) {
+          AVISO_ENLACE = "Esta sucursal fue dada de baja por el administrador. Al volver a abrir la App se usará la sucursal principal.";
+          mostrarAvisoEnlace();
+          return;
+        }
+        if (!ENLACE_PENDIENTE) return;
+        const encontrada = lista && lista.find((s) => s.id === ENLACE_PENDIENTE);
+        if (encontrada) {
+          const pendientes = pendientesDeBackend(BACKEND_ID);
+          const preguntar = !!backendGuardado() || pendientes > 0;
+          const texto = "Este enlace es de " + (encontrada.nombre || "otra sucursal") + "." +
+            (pendientes > 0
+              ? " En este celular hay " + pendientes + " escaneo(s) sin enviar de la sucursal anterior: quedan guardados y se envían cuando vuelvas a abrir su enlace."
+              : "") +
+            "\n\n¿Cambiar a esa sucursal en este celular?";
+          if (!preguntar || window.confirm(texto)) {
+            try {
+              localStorage.setItem(BACKEND_KEY, ENLACE_PENDIENTE);
+            } catch (error) {
+              // Sin almacenamiento no se puede cambiar de sucursal.
+            }
+            location.reload();
+          }
+          return;
+        }
+        AVISO_ENLACE = lista
+          ? "Este enlace es de una sucursal que no está habilitada en la App. Se sigue usando la sucursal anterior. " +
+            "Si es una sucursal nueva, pedile al administrador que la habilite."
+          : "No se pudo comprobar la sucursal del enlace porque no hay conexión. Volvé a abrir el enlace cuando haya señal.";
+        mostrarAvisoEnlace();
+      }
+
+      mostrarAvisoEnlace();
+      verificarEnlacePendiente();
       // URL del Web App de Google Apps Script de esta sucursal.
       const WEB_APP_URL = "https://script.google.com/macros/s/" + BACKEND_ID + "/exec";
       // Clave existente de conteos y cola offline: NO cambiar.
@@ -4985,6 +5119,138 @@
 
       $("revOpen").addEventListener("click", abrirRevision);
       $("revBack").addEventListener("click", () => setView("dashboard"));
+
+      // ===================== SUCURSALES (administrador general) =====================
+      // Ocultar el apartado es solo comodidad: el servidor de Cosquín exige el
+      // correo verificado del administrador general para cualquier alta o baja.
+      function esSuperadmin() {
+        const user = auth.currentUser;
+        return !!user && String(user.email || "").toLowerCase() === SUPERADMIN_EMAIL;
+      }
+
+      function renderAdminCard() {
+        $("adminCard").hidden = !esSuperadmin();
+      }
+
+      async function adminLlamar(op, extra) {
+        const data = await postToAppsScript(Object.assign({ action: "registro", op }, extra || {}), REGISTRO_URL);
+        if (!data || data.ok !== true) throw new Error((data && data.error) || "No se pudo completar la operación.");
+        return data;
+      }
+
+      function renderAdminLista(sucursales) {
+        const cont = $("admLista");
+        cont.replaceChildren();
+        if (!sucursales.length) {
+          const vacio = document.createElement("p");
+          vacio.className = "dash-meta";
+          vacio.textContent = "Todavía no hay sucursales dadas de alta desde acá.";
+          cont.appendChild(vacio);
+          return;
+        }
+        sucursales.forEach((s) => {
+          const fila = document.createElement("div");
+          fila.className = "adm-item";
+          const info = document.createElement("div");
+          info.className = "adm-info";
+          const nombre = document.createElement("div");
+          nombre.className = "adm-nombre";
+          nombre.textContent = s.nombre;
+          const id = document.createElement("div");
+          id.className = "adm-id";
+          id.textContent = s.id;
+          const estado = document.createElement("div");
+          estado.className = "adm-estado " + (s.activa ? "on" : "off");
+          estado.textContent = s.activa ? "Habilitada" : "Dada de baja";
+          info.append(nombre, id, estado);
+          fila.appendChild(info);
+          const boton = document.createElement("button");
+          boton.type = "button";
+          boton.className = "btn btn-secondary";
+          boton.textContent = s.activa ? "Dar de baja" : "Volver a habilitar";
+          boton.dataset.admOp = s.activa ? "baja" : "alta";
+          boton.dataset.admId = s.id;
+          boton.dataset.admNombre = s.nombre;
+          fila.appendChild(boton);
+          cont.appendChild(fila);
+        });
+      }
+
+      async function abrirAdmin(prefill) {
+        if (!esSuperadmin()) return;
+        setView("admin");
+        if (prefill) {
+          $("admId").value = prefill.id || "";
+          $("admNombre").value = prefill.nombre || "";
+        }
+        hideMessage("admMsg");
+        try {
+          renderAdminLista((await adminLlamar("listar")).sucursales);
+        } catch (error) {
+          showMessage("admMsg", "No se pudo cargar el registro: " + error.message, "error");
+        }
+      }
+
+      /** Enlace del correo "Pedir habilitación": ?admin=1&alta=<ID>&nombre=<nombre>. */
+      function revisarPedidoAdmin() {
+        const params = new URLSearchParams(location.search);
+        if (params.get("admin") !== "1") return;
+        const prefill = { id: params.get("alta") || "", nombre: params.get("nombre") || "" };
+        ["admin", "alta", "nombre"].forEach((k) => params.delete(k));
+        try {
+          const resto = params.toString();
+          history.replaceState(null, "", location.pathname + (resto ? "?" + resto : "") + location.hash);
+        } catch (error) {
+          // No crítico.
+        }
+        if (esSuperadmin()) abrirAdmin(prefill);
+      }
+
+      $("adminOpen").addEventListener("click", () => abrirAdmin());
+      $("admBack").addEventListener("click", () => setView("dashboard"));
+      $("admAlta").addEventListener("click", async () => {
+        const id = $("admId").value.trim();
+        const nombre = $("admNombre").value.trim();
+        if (!BACKEND_ID_RE.test(id)) {
+          showMessage("admMsg", "El ID no es válido: tiene que empezar con AKfy (lo muestra el asistente de la sucursal).", "warning");
+          return;
+        }
+        if (!nombre) {
+          showMessage("admMsg", "Escribí el nombre de la sucursal.", "warning");
+          return;
+        }
+        const boton = $("admAlta");
+        boton.disabled = true;
+        try {
+          const data = await adminLlamar("alta", { id, nombre });
+          renderAdminLista(data.sucursales);
+          $("admId").value = "";
+          $("admNombre").value = "";
+          showMessage("admMsg", "✓ " + nombre + " quedó habilitada. Su equipo ya puede abrir el enlace.", "success");
+          actualizarRegistro().catch(() => {});
+        } catch (error) {
+          showMessage("admMsg", error.message, "error");
+        } finally {
+          boton.disabled = false;
+        }
+      });
+      $("admLista").addEventListener("click", async (event) => {
+        const boton = event.target.closest("[data-adm-op]");
+        if (!boton) return;
+        const op = boton.dataset.admOp;
+        const nombre = boton.dataset.admNombre;
+        if (op === "baja" && !window.confirm("¿Dar de baja " + nombre + "? Su equipo no va a poder abrir la App hasta que la vuelvas a habilitar.")) return;
+        boton.disabled = true;
+        try {
+          const data = await adminLlamar(op, { id: boton.dataset.admId, nombre });
+          renderAdminLista(data.sucursales);
+          showMessage("admMsg", op === "baja" ? "Se dio de baja " + nombre + "." : "✓ " + nombre + " quedó habilitada otra vez.", "success");
+          actualizarRegistro().catch(() => {});
+        } catch (error) {
+          showMessage("admMsg", error.message, "error");
+          boton.disabled = false;
+        }
+      });
       $("dashGroupSelect").addEventListener("change", () => { rev.data = null; renderRevCard(); });
 
       $("revList").addEventListener("click", (event) => {
@@ -5359,7 +5625,7 @@
         return false;
       }
 
-      async function postToAppsScript(payload) {
+      async function postToAppsScript(payload, destino) {
         const user = auth.currentUser;
         if (!user) throw new Error("No hay una sesión Google iniciada.");
 
@@ -5440,7 +5706,7 @@
 
           const form = document.createElement("form");
           form.method = "POST";
-          form.action = WEB_APP_URL;
+          form.action = destino || WEB_APP_URL;
           form.target = frameName;
           form.acceptCharset = "UTF-8";
           form.style.display = "none";
@@ -7204,6 +7470,8 @@
         dashboard: ["viewDashboard", "tabDashboard"],
         // Revisión de diferencias: se abre desde Panel (sin pestaña propia).
         review: ["viewReview", "tabDashboard"],
+        // Apartado de sucursales (solo administrador general): se abre desde el Panel.
+        admin: ["viewAdmin", "tabDashboard"],
       };
       function setView(view, options = {}) {
         // "count" era el nombre anterior de la pantalla de escaneo.
@@ -7220,6 +7488,7 @@
         $("suggestions").hidden = true;
         if (state.view === "dashboard") {
           renderRevCard();
+          renderAdminCard();
           $("appAccount").textContent =
             (auth.currentUser && auth.currentUser.email) ||
             $("authIdentity").textContent ||
@@ -7361,6 +7630,7 @@
 
           const authorized = await initializeCatalog(true);
           if (runId !== authStateRun) return;
+          if (authorized) window.setTimeout(revisarPedidoAdmin, 300);
 
           if (!authorized) {
             if (hasLocalData && !state.lastErrorFromServer) {
